@@ -11,8 +11,6 @@ pub async fn recursion_cookies_handle(
 ) -> Result<Response, String> {
     if let Ok(response) = client
         .reqwest_client()
-        .lock()
-        .await
         .get(url)
         .headers(DEFAULT_HEADERS.clone())
         .send()

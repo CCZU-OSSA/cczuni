@@ -4,7 +4,7 @@ use base64::{prelude::BASE64_STANDARD, Engine};
 use reqwest::StatusCode;
 
 use crate::{
-    base::{client::Client, typing::DetailErrResult},
+    base::{client::Client, typing::EmptyOrErr},
     impls::client::DefaultClient,
     internals::{
         cookies_io::CookiesIOExt,
@@ -16,11 +16,11 @@ use crate::{
 use super::sso_type::{LoginConnectType, UniversalSSOLogin};
 
 pub trait SSOLogin {
-    fn sso_login(&self) -> impl Future<Output = DetailErrResult>;
+    fn sso_login(&self) -> impl Future<Output = EmptyOrErr>;
 }
 
 impl SSOLogin for DefaultClient {
-    async fn sso_login(&self) -> DetailErrResult {
+    async fn sso_login(&self) -> EmptyOrErr {
         universal_sso_login(self.clone()).await?;
         Ok(())
     }
@@ -29,14 +29,7 @@ impl SSOLogin for DefaultClient {
 pub async fn universal_sso_login(
     client: impl Client + Clone + Send,
 ) -> Result<UniversalSSOLogin, &'static str> {
-    if let Ok(response) = client
-        .reqwest_client()
-        .lock()
-        .await
-        .get(ROOT_SSO_LOGIN)
-        .send()
-        .await
-    {
+    if let Ok(response) = client.reqwest_client().get(ROOT_SSO_LOGIN).send().await {
         // use webvpn
         if response.status() == StatusCode::FOUND {
             // redirect to webvpn root
@@ -64,8 +57,6 @@ pub async fn universal_sso_login(
 
                 if let Ok(response) = client
                     .reqwest_client()
-                    .lock()
-                    .await
                     .post(url)
                     .form(&login_param)
                     .send()
@@ -78,8 +69,6 @@ pub async fn universal_sso_login(
                     let redirect_location = redirect_location_header.unwrap().to_str().unwrap();
                     if let Ok(response) = client
                         .reqwest_client()
-                        .lock()
-                        .await
                         .get(redirect_location)
                         .headers(DEFAULT_HEADERS.clone())
                         .send()
@@ -108,8 +97,6 @@ pub async fn universal_sso_login(
 
             if let Ok(response) = client
                 .reqwest_client()
-                .lock()
-                .await
                 .post(ROOT_SSO_LOGIN)
                 .form(&login_param)
                 .send()

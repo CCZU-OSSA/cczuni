@@ -1,6 +1,6 @@
 use reqwest_cookie_store::CookieStoreMutex;
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use std::{collections::HashMap, sync::Arc};
+use tokio::sync::RwLock;
 
 #[derive(Debug, Clone)]
 pub struct Account {
@@ -17,8 +17,28 @@ impl Account {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum Property {
+    String(String),
+    I32(i32),
+    Bool(bool),
+}
+
+impl Property {
+    pub fn get_bool(&self) -> Option<bool> {
+        match self {
+            Property::Bool(value) => Some(value.clone()),
+            _ => None,
+        }
+    }
+    pub fn get_bool_unwrap(&self) -> bool {
+        self.get_bool().unwrap()
+    }
+}
+
 pub trait Client {
     fn account(&self) -> Account;
-    fn reqwest_client(&self) -> Arc<Mutex<reqwest::Client>>;
+    fn reqwest_client(&self) -> reqwest::Client;
     fn cookies(&self) -> Arc<CookieStoreMutex>;
+    fn properties(&self) -> Arc<RwLock<HashMap<&'static str, Property>>>;
 }
