@@ -64,7 +64,7 @@ pub async fn universal_sso_login(
                 {
                     let redirect_location_header = response.headers().get("location");
                     if let None = redirect_location_header {
-                        return Err("跳转WebVPN失败");
+                        return Err("跳转 WebVPN 失败");
                     }
                     let redirect_location = redirect_location_header.unwrap().to_str().unwrap();
                     if let Ok(response) = client
@@ -111,6 +111,7 @@ pub async fn universal_sso_login(
     }
     Err("无法登录！请检查账户密码！")
 }
+
 fn parse_hidden_values(_html: &str) -> HashMap<String, String> {
     todo!("May be use a async parser here");
 }

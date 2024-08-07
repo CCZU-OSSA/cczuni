@@ -20,7 +20,8 @@ mod test {
         struct Foo<C> {
             client: C,
         }
-        impl<C: Client + Clone> Application<C> for Foo<C> {
+
+        impl<C: Client> Application<C> for Foo<C> {
             fn from_client(client: C) -> Self {
                 Foo { client }
             }
@@ -47,7 +48,7 @@ mod test {
         tokio::spawn(async {
             let client = DefaultClient::new(Account::new("user", " password"));
             client.sso_login().await.unwrap();
-            let foo = client.visit::<Foo<DefaultClient>>();
+            let foo = client.visit::<Foo<_>>();
             foo.login().await;
         });
     }
