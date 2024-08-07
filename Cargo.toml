@@ -1,0 +1,21 @@
+[package]
+name = "cczuni"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
+reqwest = { version = "0.12", features = [
+    "cookies",
+    "multipart",
+    "native-tls-vendored",
+    "json",
+] }
+reqwest_cookie_store = "*"
+rand = "*"
+serde = { version = "*", features = ["derive"] }
+serde_json = "*"
+async-recursion = "1"
+aes = "*"
+cbc = "*"
+base64 = "*"
