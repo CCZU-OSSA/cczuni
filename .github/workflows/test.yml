@@ -5,8 +5,16 @@ on:
   workflow_dispatch:
   push:
     branches: ["master"]
+    paths:
+      - 'src/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
   pull_request:
     branches: ["master"]
+    paths:
+      - 'src/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
 
 env:
   CARGO_TERM_COLOR: always
