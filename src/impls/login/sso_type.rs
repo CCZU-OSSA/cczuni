@@ -3,6 +3,8 @@ use cbc::Encryptor;
 use reqwest::Response;
 use serde::Deserialize;
 
+use crate::base::client::Property;
+
 pub type CbcAES128Enc = Encryptor<Aes128Enc>;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -128,6 +130,37 @@ pub struct ElinkServiceData {
 pub enum LoginConnectType {
     WEBVPN,
     COMMON,
+}
+
+impl LoginConnectType {
+    pub fn key() -> &'static str {
+        "login-connect-type"
+    }
+}
+
+impl Into<Property> for LoginConnectType {
+    fn into(self) -> Property {
+        Property::String(
+            match self {
+                LoginConnectType::COMMON => "common",
+                LoginConnectType::WEBVPN => "webvpn",
+            }
+            .into(),
+        )
+    }
+}
+
+impl From<Property> for LoginConnectType {
+    fn from(value: Property) -> Self {
+        match value {
+            Property::String(data) => match data.as_str() {
+                "common" => LoginConnectType::COMMON,
+                "webvpn" => LoginConnectType::WEBVPN,
+                _ => panic!("Unknown Login Connect Type"),
+            },
+            _ => panic!("Wrong Property Type, expect `Property::String`"),
+        }
+    }
 }
 
 pub struct UniversalSSOLogin {

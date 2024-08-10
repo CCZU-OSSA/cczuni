@@ -24,9 +24,7 @@ pub const ROOT_SSO_LOGIN: &'static str = "http://sso.cczu.edu.cn/sso/login";
 
 pub const ROOT_VPN: &'static str = "https://zmvpn.cczu.edu.cn";
 pub const ROOT_VPN_URL: LazyLock<Url> = LazyLock::new(|| Url::parse(ROOT_VPN).unwrap());
-#[allow(dead_code)]
 pub const ROOT_YWTB: &'static str = "http://ywtb.cczu.edu.cn";
-#[allow(dead_code)]
 pub const WEBVPN_SERVER_MAP: LazyLock<HashMap<String, String>> = LazyLock::new(|| {
     let mut map = HashMap::new();
 
@@ -38,5 +36,4 @@ pub const WEBVPN_SERVER_MAP: LazyLock<HashMap<String, String>> = LazyLock::new(|
 
     map
 });
-#[allow(dead_code)]
 pub const WECHAT_APP_API: &'static str = "http://202.195.102.7:8180";

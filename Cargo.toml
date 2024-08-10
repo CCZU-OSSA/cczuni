@@ -19,3 +19,4 @@ async-recursion = "1"
 aes = "*"
 cbc = "*"
 base64 = "*"
+scraper = { version = "*", features = ["atomic"] }

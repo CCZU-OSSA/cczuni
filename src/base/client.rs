@@ -31,8 +31,31 @@ impl Property {
             _ => None,
         }
     }
+
     pub fn get_bool_unwrap(&self) -> bool {
         self.get_bool().unwrap()
+    }
+
+    pub fn get_i32(&self) -> Option<i32> {
+        match self {
+            Property::I32(value) => Some(value.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn get_i32_unwrap(&self) -> i32 {
+        self.get_i32().unwrap()
+    }
+
+    pub fn get_string(&self) -> Option<String> {
+        match self {
+            Property::String(value) => Some(value.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn get_string_unwrap(&self) -> String {
+        self.get_string().unwrap()
     }
 }
 

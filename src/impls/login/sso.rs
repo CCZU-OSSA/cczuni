@@ -1,17 +1,16 @@
 use std::{collections::HashMap, future::Future};
 
-use base64::{prelude::BASE64_STANDARD, Engine};
-use reqwest::StatusCode;
-
 use crate::{
     base::{client::Client, typing::EmptyOrErr},
-    impls::client::DefaultClient,
     internals::{
         cookies_io::CookiesIOExt,
         fields::{DEFAULT_HEADERS, ROOT_SSO_LOGIN, ROOT_VPN_URL},
         recursion::recursion_cookies_handle,
     },
 };
+use base64::{prelude::BASE64_STANDARD, Engine};
+use reqwest::StatusCode;
+use scraper::{Html, Selector};
 
 use super::sso_type::{LoginConnectType, UniversalSSOLogin};
 
@@ -19,9 +18,13 @@ pub trait SSOLogin {
     fn sso_login(&self) -> impl Future<Output = EmptyOrErr>;
 }
 
-impl SSOLogin for DefaultClient {
+impl<C: Client + Clone + Send> SSOLogin for C {
     async fn sso_login(&self) -> EmptyOrErr {
-        universal_sso_login(self.clone()).await?;
+        let login_info = universal_sso_login(self.clone()).await?;
+        self.properties().write().await.insert(
+            LoginConnectType::key(),
+            login_info.login_connect_type.into(),
+        );
         Ok(())
     }
 }
@@ -112,6 +115,18 @@ pub async fn universal_sso_login(
     Err("无法登录！请检查账户密码！")
 }
 
-fn parse_hidden_values(_html: &str) -> HashMap<String, String> {
-    todo!("May be use a async parser here");
+pub fn parse_hidden_values(html: &str) -> HashMap<String, String> {
+    let mut hidden_values = HashMap::new();
+    let dom = Html::parse_document(html);
+    let input_hidden_selector = Selector::parse(r#"input[type="hidden"]"#).unwrap();
+    let tags_hidden = dom.select(&input_hidden_selector);
+
+    tags_hidden.for_each(|tag_hidden| {
+        hidden_values.insert(
+            tag_hidden.attr("name").unwrap().to_string(),
+            tag_hidden.attr("value").unwrap().to_string(),
+        );
+    });
+
+    hidden_values
 }
