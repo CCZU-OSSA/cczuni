@@ -7,16 +7,24 @@ edition = "2021"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
 reqwest = { version = "0.12", features = [
     "cookies",
-    "multipart",
-    "native-tls-vendored",
+    "multipart",           # Support Post a Form
+    "native-tls-vendored", # Support Cross-Platform Compile in some situation
     "json",
 ] }
-reqwest_cookie_store = "*"
-rand = "*"
-serde = { version = "*", features = ["derive"] }
-serde_json = "*"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 async-recursion = "1"
-aes = "*"
-cbc = "*"
+
 base64 = "*"
 scraper = { version = "*", features = ["atomic"] }
+reqwest_cookie_store = "*"
+
+# webvpn-login
+aes = { version = "*", optional = true }
+cbc = { version = "*", optional = true }
+rand = { version = "*", optional = true }
+
+[features]
+default = []
+webvpn-login = ["dep:aes", "dep:cbc", "dep:rand"]
+full = ["webvpn-login"]
