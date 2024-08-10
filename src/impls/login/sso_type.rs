@@ -134,6 +134,7 @@ pub enum LoginConnectType {
 }
 
 impl LoginConnectType {
+    #[inline(always)]
     pub fn key() -> &'static str {
         "login-connect-type"
     }
