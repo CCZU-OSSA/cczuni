@@ -1,31 +1,62 @@
 use std::{collections::HashMap, future::Future};
 
 use crate::{
-    base::{client::Client, typing::EmptyOrErr},
+    base::{client::Client, typing::TorErr},
     internals::{
         cookies_io::CookiesIOExt,
-        fields::{DEFAULT_HEADERS, ROOT_SSO_LOGIN, ROOT_VPN_URL},
+        fields::{DEFAULT_HEADERS, ROOT_SSO, ROOT_SSO_LOGIN, ROOT_VPN_URL, ROOT_YWTB},
         recursion::recursion_cookies_handle,
     },
 };
 use base64::{prelude::BASE64_STANDARD, Engine};
-use reqwest::StatusCode;
+use reqwest::{cookie::Cookie, StatusCode, Url};
 use scraper::{Html, Selector};
 
-use super::sso_type::{LoginConnectType, UniversalSSOLogin};
+use super::sso_type::{ElinkLoginInfo, LoginConnectType, UniversalSSOLogin};
 
 pub trait SSOLogin {
-    fn sso_login(&self) -> impl Future<Output = EmptyOrErr>;
+    fn sso_login(&self) -> impl Future<Output = TorErr<Option<ElinkLoginInfo>>>;
 }
 
 impl<C: Client + Clone + Send> SSOLogin for C {
-    async fn sso_login(&self) -> EmptyOrErr {
+    /// You can only get the ElinkLoginInfo in WebVPN Mode!
+    async fn sso_login(&self) -> TorErr<Option<ElinkLoginInfo>> {
         let login_info = universal_sso_login(self.clone()).await?;
         self.properties().write().await.insert(
             LoginConnectType::key(),
-            login_info.login_connect_type.into(),
+            login_info.login_connect_type.clone().into(),
         );
-        Ok(())
+
+        match login_info.login_connect_type {
+            LoginConnectType::WEBVPN => {
+                let response = login_info.response;
+
+                if let Some(cookie) = &response
+                    .cookies()
+                    .filter(|cookie| cookie.name() == "clientInfo")
+                    .collect::<Vec<Cookie>>()
+                    .first()
+                {
+                    let json =
+                        String::from_utf8(BASE64_STANDARD.decode(cookie.value()).unwrap()).unwrap();
+                    let data: ElinkLoginInfo = serde_json::from_str(&json).unwrap();
+
+                    Ok(Some(data))
+                } else {
+                    Err("Get `ElinkLoginInfo` failed")
+                }
+            }
+            LoginConnectType::COMMON => {
+                self.cookies().lock().unwrap().copy_cookies(
+                    &ROOT_SSO.parse::<Url>().unwrap(),
+                    &format!("{}/pc/index.html", ROOT_YWTB)
+                        .parse::<Url>()
+                        .unwrap(),
+                );
+
+                Ok(None)
+            }
+        }
     }
 }
 

@@ -1,2 +1,2 @@
-pub type Result<T> = std::result::Result<T, &'static str>;
-pub type EmptyOrErr = Result<()>;
+pub type TorErr<T> = std::result::Result<T, &'static str>;
+pub type EmptyOrErr = TorErr<()>;

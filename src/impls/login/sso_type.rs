@@ -127,6 +127,7 @@ pub struct ElinkServiceData {
     pub gateway_vo: Option<ElinkServiceGatewayData>,
 }
 
+#[derive(Debug, Clone)]
 pub enum LoginConnectType {
     WEBVPN,
     COMMON,
