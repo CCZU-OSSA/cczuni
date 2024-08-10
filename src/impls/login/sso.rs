@@ -12,23 +12,25 @@ use base64::{prelude::BASE64_STANDARD, Engine};
 use reqwest::{cookie::Cookie, StatusCode, Url};
 use scraper::{Html, Selector};
 
-use super::sso_type::{ElinkLoginInfo, LoginConnectType, UniversalSSOLogin};
+use super::sso_type::{ElinkLoginInfo, SSOLoginConnectType, SSOUniversalLoginInfo};
 
-pub trait SSOLogin {
-    fn sso_login(&self) -> impl Future<Output = TorErr<Option<ElinkLoginInfo>>>;
+pub trait SSOUniversalLogin {
+    /// This method implements [`ROOT_SSO`] url login.
+    /// 
+    /// You can only get the ElinkLoginInfo in WebVPN Mode...
+    fn sso_universal_login(&self) -> impl Future<Output = TorErr<Option<ElinkLoginInfo>>>;
 }
 
-impl<C: Client + Clone + Send> SSOLogin for C {
-    /// You can only get the ElinkLoginInfo in WebVPN Mode!
-    async fn sso_login(&self) -> TorErr<Option<ElinkLoginInfo>> {
+impl<C: Client + Clone + Send> SSOUniversalLogin for C {
+    async fn sso_universal_login(&self) -> TorErr<Option<ElinkLoginInfo>> {
         let login_info = universal_sso_login(self.clone()).await?;
         self.properties().write().await.insert(
-            LoginConnectType::key(),
+            SSOLoginConnectType::key(),
             login_info.login_connect_type.clone().into(),
         );
 
         match login_info.login_connect_type {
-            LoginConnectType::WEBVPN => {
+            SSOLoginConnectType::WEBVPN => {
                 let response = login_info.response;
 
                 if let Some(cookie) = &response
@@ -46,7 +48,7 @@ impl<C: Client + Clone + Send> SSOLogin for C {
                     Err("Get `ElinkLoginInfo` failed")
                 }
             }
-            LoginConnectType::COMMON => {
+            SSOLoginConnectType::COMMON => {
                 self.cookies().lock().unwrap().copy_cookies(
                     &ROOT_SSO.parse::<Url>().unwrap(),
                     &format!("{}/pc/index.html", ROOT_YWTB)
@@ -62,7 +64,7 @@ impl<C: Client + Clone + Send> SSOLogin for C {
 
 pub async fn universal_sso_login(
     client: impl Client + Clone + Send,
-) -> Result<UniversalSSOLogin, &'static str> {
+) -> Result<SSOUniversalLoginInfo, &'static str> {
     if let Ok(response) = client.reqwest_client().get(ROOT_SSO_LOGIN).send().await {
         // use webvpn
         if response.status() == StatusCode::FOUND {
@@ -113,9 +115,9 @@ pub async fn universal_sso_login(
                             .lock()
                             .unwrap()
                             .add_reqwest_cookies(response.cookies(), &ROOT_VPN_URL);
-                        return Ok(UniversalSSOLogin {
+                        return Ok(SSOUniversalLoginInfo {
                             response,
-                            login_connect_type: LoginConnectType::WEBVPN,
+                            login_connect_type: SSOLoginConnectType::WEBVPN,
                         });
                     };
                 };
@@ -136,9 +138,9 @@ pub async fn universal_sso_login(
                 .send()
                 .await
             {
-                return Ok(UniversalSSOLogin {
+                return Ok(SSOUniversalLoginInfo {
                     response,
-                    login_connect_type: LoginConnectType::COMMON,
+                    login_connect_type: SSOLoginConnectType::COMMON,
                 });
             };
         }

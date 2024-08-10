@@ -22,6 +22,7 @@ pub enum Property {
     String(String),
     I32(i32),
     Bool(bool),
+    Str(&'static str),
 }
 
 impl Property {
@@ -56,6 +57,17 @@ impl Property {
 
     pub fn get_string_unwrap(&self) -> String {
         self.get_string().unwrap()
+    }
+
+    pub fn get_str(&self) -> Option<&'static str> {
+        match self {
+            Property::Str(value) => Some(value),
+            _ => None,
+        }
+    }
+
+    pub fn get_str_unwrap(&self) -> &'static str {
+        self.get_str().unwrap()
     }
 }
 

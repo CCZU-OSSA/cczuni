@@ -11,7 +11,7 @@ mod test {
             app::{AppVisitor, Application},
             client::{Account, Client},
         },
-        impls::{client::DefaultClient, login::sso::SSOLogin},
+        impls::{client::DefaultClient, login::sso::SSOUniversalLogin},
         internals::recursion::recursion_cookies_handle,
     };
     #[tokio::test]
@@ -46,7 +46,7 @@ mod test {
 
         tokio::spawn(async {
             let client = DefaultClient::new(Account::new("user", " password"));
-            client.sso_login().await.unwrap();
+            client.sso_universal_login().await.unwrap();
             let foo = client.visit::<Foo<_>>();
             foo.login().await;
         });
