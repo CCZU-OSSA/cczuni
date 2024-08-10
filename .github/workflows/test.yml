@@ -1,6 +1,8 @@
 name: Lib Build Test
 
 on:
+  workflow_call:
+  workflow_dispatch:
   push:
     branches: ["master"]
   pull_request:

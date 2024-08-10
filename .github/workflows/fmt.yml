@@ -1,0 +1,33 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Code Format
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches: ["master"]
+    paths:
+      - 'src/**'
+  pull_request:
+    branches: ["master"]
+    paths:
+      - 'src/**'
+      
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Format
+        run: cargo fmt
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          committer_name: Code Format[bot]
+          committer_email: 41898282+github-actions[bot]@users.noreply.github.com
+          message: "🎨 Format .rs files"
+          add: "*.rs"

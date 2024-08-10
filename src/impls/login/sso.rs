@@ -16,7 +16,7 @@ use super::sso_type::{ElinkLoginInfo, SSOLoginConnectType, SSOUniversalLoginInfo
 
 pub trait SSOUniversalLogin {
     /// This method implements [`ROOT_SSO`] url login.
-    /// 
+    ///
     /// You can only get the ElinkLoginInfo in WebVPN Mode...
     fn sso_universal_login(&self) -> impl Future<Output = TorErr<Option<ElinkLoginInfo>>>;
 }
