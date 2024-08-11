@@ -1,6 +1,9 @@
 pub mod base;
 pub mod impls;
+#[cfg(feature = "internals")]
 pub mod internals;
+#[cfg(not(feature = "internals"))]
+pub(crate) mod internals;
 
 #[cfg(test)]
 mod test {
@@ -21,8 +24,8 @@ mod test {
         }
 
         impl<C: Client> Application<C> for Foo<C> {
-            fn from_client(client: C) -> Self {
-                Foo { client }
+            async fn from_client(client: C) -> Self {
+                Self { client }
             }
         }
 
@@ -47,7 +50,7 @@ mod test {
         tokio::spawn(async {
             let client = DefaultClient::new(Account::new("user", " password"));
             client.sso_universal_login().await.unwrap();
-            let foo = client.visit::<Foo<_>>();
+            let foo = client.visit::<Foo<_>>().await;
             foo.login().await;
         });
     }

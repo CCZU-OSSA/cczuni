@@ -24,7 +24,9 @@ aes = { version = "*", optional = true }
 cbc = { version = "*", optional = true }
 rand = { version = "*", optional = true }
 
+
 [features]
-default = []
 webvpn-login = ["dep:aes", "dep:cbc", "dep:rand"]
-full = ["webvpn-login"]
+calendar = []
+internals = []
+full = ["webvpn-login", "calendar", "internals"]

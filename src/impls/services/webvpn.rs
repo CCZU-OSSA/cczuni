@@ -1,6 +1,6 @@
 use std::{collections::HashMap, future::Future};
 
-use reqwest::{redirect::Policy, ClientBuilder, StatusCode};
+use reqwest::StatusCode;
 
 use crate::{
     base::{client::Client, typing::TorErr},
@@ -13,7 +13,7 @@ use super::webvpn_type::{ElinkServiceInfo, ElinkUserInfo, ElinkUserServiceInfo};
 ///
 /// Get the `user_id` from [`crate::impls::login::sso_type::ElinkLoginInfo`]
 pub trait WebVPNService {
-    fn webvpn_available() -> impl Future<Output = bool>;
+    fn webvpn_available(&self) -> impl Future<Output = bool>;
 
     fn webvpn_get_user_info(
         &self,
@@ -135,12 +135,9 @@ impl<C: Client> WebVPNService for C {
         Err("获取失败，请稍后重试".into())
     }
 
-    async fn webvpn_available() -> bool {
-        let client = ClientBuilder::new()
-            .redirect(Policy::none())
-            .build()
-            .unwrap();
-        if let Ok(response) = client.get(ROOT_SSO_LOGIN).send().await {
+    /// Client Redirect Policy: [`reqwest::redirect::Policy::none()`]
+    async fn webvpn_available(&self) -> bool {
+        if let Ok(response) = self.reqwest_client().get(ROOT_SSO_LOGIN).send().await {
             return response.status() == StatusCode::FOUND;
         }
         false

@@ -2,10 +2,9 @@ use std::{collections::HashMap, future::Future, sync::LazyLock};
 
 use reqwest::Url;
 
-use crate::impls::login::sso_status::SSOLoginStatus;
-use crate::{base::client::Client, impls::login::sso_type::SSOLoginConnectType};
-
-use super::{
+use crate::base::client::Client;
+use crate::impls::login::{sso_status::SSOLoginStatus, sso_type::SSOLoginConnectType};
+use crate::internals::{
     cookies_io::CookiesIOExt,
     fields::{ROOT_SSO_URL, ROOT_VPN_URL},
 };
@@ -24,7 +23,7 @@ pub const STATIC_SERVER_MAP: LazyLock<HashMap<String, String>> = LazyLock::new(|
 
 pub trait Redirect {
     fn redirect(&self, url: impl Into<String>) -> impl Future<Output = String>;
-    fn initialize_url(&self, url: impl Into<Url>) -> impl Future<Output = ()>;
+    fn initialize_url(&self, url: impl Into<String>) -> impl Future<Output = ()>;
 }
 
 impl<C: Client> Redirect for C {
@@ -41,7 +40,8 @@ impl<C: Client> Redirect for C {
         }
     }
 
-    async fn initialize_url(&self, url: impl Into<Url>) {
+    async fn initialize_url(&self, url: impl Into<String>) {
+        let url: String = url.into();
         let from = match self
             .sso_login_connect_type()
             .await
@@ -53,6 +53,6 @@ impl<C: Client> Redirect for C {
         self.cookies()
             .lock()
             .unwrap()
-            .copy_cookies(from, &url.into());
+            .copy_cookies(from, &Url::parse(url.as_str()).unwrap());
     }
 }
