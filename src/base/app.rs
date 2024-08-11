@@ -5,7 +5,7 @@ use super::client::Client;
 pub trait Application<C: Client> {
     /// Sometimes need async to initialize the struct data
     #[allow(opaque_hidden_inferred_bound)]
-    fn from_client(client: C) -> impl Future<Output = Self> ;
+    fn from_client(client: C) -> impl Future<Output = Self>;
 }
 
 pub trait AppVisitor<C: Client> {
