@@ -5,7 +5,7 @@ use scraper::{ElementRef, Html, Selector};
 
 use crate::base::app::Application;
 use crate::base::client::Client;
-use crate::base::typing::EmptyOrErr;
+use crate::base::typing::{EmptyOrErr, TorErr};
 use crate::impls::services::sso_redirect::SSORedirect;
 
 use super::jwcas_type::GradeData;
@@ -24,7 +24,15 @@ impl<C: Client + Clone> Application<C> for JwcasApplication<C> {
     }
 }
 
-impl<C: Client> JwcasApplication<C> {
+impl<C: Client + Clone> JwcasApplication<C> {
+    /// will call login after [`Self::from_client`]
+    pub async fn from_client_login(client: C) -> TorErr<Self> {
+        let app = Self::from_client(client).await;
+        app.login().await?;
+        Ok(app)
+    }
+
+    /// Visit this Url will login in too.
     pub async fn login(&self) -> EmptyOrErr {
         let api = format!("{}/web_cas/web_cas_login_jwgl.aspx", self.root);
         self.client.sso_initialize_url(api.clone()).await;
