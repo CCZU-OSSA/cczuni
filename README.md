@@ -14,6 +14,38 @@
 ```sh
 cargo add --git https://github.com/CCZU-OSSA/cczuni.git
 ```
+## Features
+
+```rust
+todo!()
+```
+
+## What's the Difference to `CCZU-Client-API`?
+
+### Thread Safe
+
+In `CCZU-Client-API`, we used this code to impl `Sync` and `Send`.
+
+```rust
+unsafe impl Send for #ident {}
+unsafe impl Sync for #ident {}
+```
+
+There are some risks to use with it.
+
+In `cczuni`, we use `Arc` and `tokio::sync` to ensure the thread safe.
+
+### Faster Speed
+
+With less unnecessary clone, new...
+
+`cczuni` is faster, I think.
+
+### Flexible Struct
+
+In `cczuni`, most traits are impl for generic `Client`.
+
+We provided a default `crate::impls::client::DefaultClient`, If you want to custom a `Client`, just impl `Client` for `SomeStruct`.
 
 ## Docs
 
