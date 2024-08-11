@@ -21,13 +21,13 @@ pub const STATIC_SERVER_MAP: LazyLock<HashMap<String, String>> = LazyLock::new(|
     map
 });
 
-pub trait Redirect {
-    fn redirect(&self, url: impl Into<String>) -> impl Future<Output = String>;
-    fn initialize_url(&self, url: impl Into<String>) -> impl Future<Output = ()>;
+pub trait SSORedirect {
+    fn sso_redirect(&self, url: impl Into<String>) -> impl Future<Output = String>;
+    fn sso_initialize_url(&self, url: impl Into<String>) -> impl Future<Output = ()>;
 }
 
-impl<C: Client> Redirect for C {
-    async fn redirect(&self, url: impl Into<String>) -> String {
+impl<C: Client> SSORedirect for C {
+    async fn sso_redirect(&self, url: impl Into<String>) -> String {
         let url = url.into();
 
         match self
@@ -40,7 +40,7 @@ impl<C: Client> Redirect for C {
         }
     }
 
-    async fn initialize_url(&self, url: impl Into<String>) {
+    async fn sso_initialize_url(&self, url: impl Into<String>) {
         let url: String = url.into();
         let from = match self
             .sso_login_connect_type()

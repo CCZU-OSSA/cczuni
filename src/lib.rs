@@ -5,6 +5,8 @@ pub mod internals;
 #[cfg(not(feature = "internals"))]
 pub(crate) mod internals;
 
+pub mod extension;
+
 #[cfg(test)]
 mod test {
     use reqwest::Url;
@@ -14,7 +16,10 @@ mod test {
             app::{AppVisitor, Application},
             client::{Account, Client},
         },
-        impls::{client::DefaultClient, login::sso::SSOUniversalLogin},
+        impls::{
+            apps::sso::jwcas::JwcasApplication, client::DefaultClient,
+            login::sso::SSOUniversalLogin,
+        },
         internals::recursion::recursion_cookies_handle,
     };
     #[tokio::test]
@@ -51,6 +56,7 @@ mod test {
             let client = DefaultClient::new(Account::new("user", " password"));
             client.sso_universal_login().await.unwrap();
             let foo = client.visit::<Foo<_>>().await;
+            let _ = client.visit::<JwcasApplication<_>>().await;
             foo.login().await;
         });
     }

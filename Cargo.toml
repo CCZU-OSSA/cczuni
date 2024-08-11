@@ -15,18 +15,25 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 async-recursion = "1"
 
-base64 = "*"
-scraper = { version = "*", features = ["atomic"] }
-reqwest_cookie_store = "*"
+base64 = "0.22"
+scraper = { version = "0.20", features = ["atomic"] }
+reqwest_cookie_store = "0.8.0"
 
 # webvpn-login
-aes = { version = "*", optional = true }
-cbc = { version = "*", optional = true }
-rand = { version = "*", optional = true }
+aes = { version = "0.8", optional = true }
+cbc = { version = "0.1", optional = true }
+rand = { version = "0.8", optional = true }
+
+# calendar
+uuid = { version = "1", features = ["v4", "v3"], optional = true }
+chrono = { version = "0.4", optional = true }
+icalendar = { version = "0.16", optional = true }
+regex = { version = "1", optional = true }
 
 
 [features]
+default = []
 webvpn-login = ["dep:aes", "dep:cbc", "dep:rand"]
-calendar = []
+calendar = ["dep:chrono", "dep:uuid", "dep:icalendar", "dep:regex"]
 internals = []
 full = ["webvpn-login", "calendar", "internals"]
