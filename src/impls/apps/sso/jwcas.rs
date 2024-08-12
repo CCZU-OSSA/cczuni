@@ -123,11 +123,11 @@ pub mod calendar {
     use crate::extension::calendar::{CalendarParser, ClassInfo};
 
     use super::JwcasApplication;
-    impl<C: Client> CalendarParser for JwcasApplication<C> {
+    impl<C: Client + Clone> CalendarParser for JwcasApplication<C> {
         async fn get_classinfo_vec(&self) -> TorErr<Vec<ClassInfo>> {
             let opt_text = self.get_classlist_html().await;
             if let None = opt_text {
-                return Err("获取页面错误".into());
+                return Err("获取页面错误");
             }
             let text = opt_text.unwrap();
             let doc = Html::parse_document(&text);
