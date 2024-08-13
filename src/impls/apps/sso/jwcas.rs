@@ -73,16 +73,20 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
 
     pub async fn get_gradeinfo_vec(&self) -> Result<Vec<GradeData>, String> {
         if let Some(text) = self.get_gradelist_html().await {
+            let tb_up = Selector::parse(r#"table[id="GVkbk"]"#).unwrap();
             let selector = Selector::parse(r#"tr[class="dg1-item"]"#).unwrap();
             let dom = Html::parse_document(&text);
             Ok(dom
+                .select(&tb_up)
+                .next()
+                .unwrap()
                 .select(&selector)
                 .map(|e| {
                     let childs: Vec<ElementRef> = e.child_elements().collect();
                     GradeData {
-                        name: extract_string(childs.get(5).unwrap()),
-                        point: extract_string(childs.get(8).unwrap()),
-                        grade: extract_string(childs.get(9).unwrap()),
+                        name: extract_string(childs.get(5)),
+                        point: extract_string(childs.get(8)),
+                        grade: extract_string(childs.get(9)),
                     }
                 })
                 .collect())
@@ -92,8 +96,12 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
     }
 }
 
-fn extract_string(element: &ElementRef) -> String {
-    element.text().next().unwrap().to_string()
+fn extract_string(element: Option<&ElementRef>) -> String {
+    if let Some(element) = element {
+        element.text().next().unwrap().to_string()
+    } else {
+        "None".into()
+    }
 }
 
 #[cfg(feature = "calendar")]
