@@ -105,3 +105,48 @@ pub struct StudentPoint {
     #[serde(rename = "pjcj")]
     pub average_grade: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct Term {
+    #[serde(rename = "xq")]
+    pub term: String,
+}
+/// Fuck the stupid noob programmer 😅
+///
+/// TBH, I really don't know how to put 100+ field in a struct.
+/// So I select some important field.
+///
+/// If you want the other fields, just create a new struct yourself.
+#[derive(Debug, Deserialize, Clone)]
+pub struct RowCourses {
+    #[serde(rename = "xq")]
+    pub term: String,
+    #[serde(default, rename = "kc1")]
+    pub course_0: String,
+    #[serde(default, rename = "kc2")]
+    pub course_1: String,
+    #[serde(default, rename = "kc3")]
+    pub course_2: String,
+    #[serde(default, rename = "kc4")]
+    pub course_3: String,
+    #[serde(default, rename = "kc5")]
+    pub course_4: String,
+    #[serde(default, rename = "kc6")]
+    pub course_5: String,
+    #[serde(default, rename = "kc7")]
+    pub course_6: String,
+}
+
+impl Into<Vec<String>> for RowCourses {
+    fn into(self) -> Vec<String> {
+        vec![
+            self.course_0,
+            self.course_1,
+            self.course_2,
+            self.course_3,
+            self.course_4,
+            self.course_5,
+            self.course_6,
+        ]
+    }
+}

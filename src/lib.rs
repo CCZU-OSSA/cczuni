@@ -13,11 +13,14 @@ mod test {
     use crate::{
         base::{
             app::{AppVisitor, Application},
-            client::{Account, Client},
+            client::Client,
         },
         extension::calendar::{ApplicationCalendarExt, CalendarParser},
         impls::{
-            apps::sso::{self, jwcas::JwcasApplication},
+            apps::{
+                sso::{self, jwcas::JwcasApplication},
+                wechat::jwqywx::JwqywxApplication,
+            },
             client::DefaultClient,
             login::sso::SSOUniversalLogin,
         },
@@ -50,23 +53,25 @@ mod test {
         }
 
         tokio::spawn(async {
-            let client = DefaultClient::new(Account::new("user", " password"));
+            let client = DefaultClient::default();
             client.sso_universal_login().await.unwrap();
             let foo = client.visit::<Foo<_>>().await;
             let _ = client.visit::<JwcasApplication<_>>().await;
             foo.login().await;
+            let app = client.visit::<JwqywxApplication<_>>().await;
+            app.login().await;
+            app.get_grades().await;
         });
     }
 
     #[tokio::test]
     async fn calendar() {
-        let client = DefaultClient::new(Account::default());
-        client.sso_universal_login().await.unwrap().unwrap();
-        let app = client.visit::<sso::jwcas::JwcasApplication<_>>().await;
+        let client = DefaultClient::default();
+        let app = client.visit::<JwqywxApplication<_>>().await;
         app.login().await.unwrap();
         println!(
             "{:?}",
-            app.column_matrix_to_classinfo(app.get_classinfo_string_week().await.unwrap())
+            app.row_matrix_to_classinfo(app.get_classinfo_week_matrix().await.unwrap())
         );
     }
 }

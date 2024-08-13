@@ -156,21 +156,31 @@ pub trait ApplicationCalendarExt {
         reminder: Option<i32>,
     ) -> impl Future<Output = Option<Calendar>>;
 
-    fn column_matrix_to_classinfo(
-        &self,
-        column_matrix: Vec<Vec<String>>,
-    ) -> TorErr<Vec<ClassInfo>> {
+    fn row_matrix_to_classinfo(&self, row_matrix: Vec<Vec<String>>) -> TorErr<Vec<ClassInfo>> {
+        let mut column_matrix: Vec<Vec<String>> = vec![];
+        for i in 0..7 {
+            let mut tmp: Vec<String> = vec![];
+            for v in row_matrix.iter() {
+                if let Some(value) = v.get(i) {
+                    tmp.push(value.clone())
+                } else {
+                    return Err("课程表解析错误".into());
+                }
+            }
+            column_matrix.push(tmp.clone());
+        }
+
         let mut course_info: HashMap<String, ClassInfo> = HashMap::new();
         for (day, course_day) in column_matrix.iter().enumerate() {
             for (time, courses_vec) in course_day.iter().enumerate() {
                 // Course A / Course B / Course C
                 let courses: Vec<String> = courses_vec
                     .split("/")
-                    .filter(|v| !v.is_empty())
-                    .map(|v| v.to_string())
+                    .filter(|v| !v.trim().is_empty())
+                    .map(|v| v.trim().to_string())
                     .collect();
                 for course in courses {
-                    if course == "&nbsp;" {
+                    if course == "&nbsp;" || course.is_empty() {
                         continue;
                     }
 
@@ -234,10 +244,18 @@ pub trait ApplicationCalendarExt {
 }
 
 pub trait CalendarParser {
-    /// The Matrix is indexed 0~6
+    /// The Matrix's column is indexed 0~6
     ///
     /// Each Vec<String> is in order.
-    fn get_classinfo_string_week(&self) -> impl Future<Output = TorErr<Vec<Vec<String>>>>;
+
+    fn get_classinfo_week_matrix(&self) -> impl Future<Output = TorErr<Vec<Vec<String>>>>;
+}
+
+pub trait TermCalendarParser: CalendarParser {
+    fn get_term_classinfo_week_matrix(
+        &self,
+        term: String,
+    ) -> impl Future<Output = TorErr<Vec<Vec<String>>>>;
 }
 
 impl<P: CalendarParser> ApplicationCalendarExt for P {
@@ -330,14 +348,14 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
 
     async fn generate_icalendar(
         &self,
-        firstweekdate: String,
+        firstmonday: String,
         schedule: Schedule,
         reminder: Option<i32>,
     ) -> Option<Calendar> {
-        if let Ok(classlist) = self.get_classinfo_string_week().await {
+        if let Ok(classlist) = self.get_classinfo_week_matrix().await {
             self.generate_icalendar_from_classlist(
-                self.column_matrix_to_classinfo(classlist).unwrap(),
-                firstweekdate,
+                self.row_matrix_to_classinfo(classlist).unwrap(),
+                firstmonday,
                 schedule,
                 reminder,
             )

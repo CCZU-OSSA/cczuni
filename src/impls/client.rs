@@ -14,6 +14,12 @@ pub struct DefaultClient {
     properties: Arc<RwLock<HashMap<&'static str, Property>>>,
 }
 
+impl Default for DefaultClient {
+    fn default() -> Self {
+        Self::new(Account::default())
+    }
+}
+
 impl DefaultClient {
     pub fn new(account: Account) -> Self {
         let cookies = Arc::new(CookieStoreMutex::default());
@@ -27,6 +33,10 @@ impl DefaultClient {
             cookies,
             properties: Arc::new(RwLock::new(HashMap::new())),
         }
+    }
+
+    pub fn account(user: impl Into<String>, password: impl Into<String>) -> Self {
+        Self::new(Account::new(user, password))
     }
 }
 

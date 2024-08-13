@@ -43,24 +43,17 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
     }
 
     pub async fn get_classlist_html(&self) -> Option<String> {
-        self.get_api_html("/web_jxrw/cx_kb_xsgrkb.aspx").await
+        self.get_html("/web_jxrw/cx_kb_xsgrkb.aspx").await
     }
 
     pub async fn get_gradelist_html(&self) -> Option<String> {
-        self.get_api_html("/web_cjgl/cx_cj_jxjhcj_xh.aspx").await
+        self.get_html("/web_cjgl/cx_cj_jxjhcj_xh.aspx").await
     }
 
-    pub async fn get_api_html(&self, service: impl Display) -> Option<String> {
+    pub async fn get_html(&self, service: impl Display) -> Option<String> {
         let api = format!("{}{}", self.root, service);
 
-        if let Ok(response) = self
-            .client
-            .reqwest_client()
-            .get(api)
-            .headers(self.client.sso_cookies_headers().await)
-            .send()
-            .await
-        {
+        if let Ok(response) = self.client.reqwest_client().get(api).send().await {
             if response.status() != StatusCode::OK {
                 None
             } else {
@@ -115,7 +108,9 @@ pub mod calendar {
 
     use super::JwcasApplication;
     impl<C: Client + Clone + Send> CalendarParser for JwcasApplication<C> {
-        async fn get_classinfo_string_week(&self) -> TorErr<Vec<Vec<String>>> {
+        async fn get_classinfo_week_matrix(
+            &self,
+        ) -> TorErr<Vec<Vec<String>>> {
             let opt_text = self.get_classlist_html().await;
             if let None = opt_text {
                 return Err("获取页面错误");
@@ -144,20 +139,9 @@ pub mod calendar {
                 })
                 .collect();
 
-            let mut column_matrix: Vec<Vec<String>> = vec![];
-            for i in 0..7 {
-                let mut tmp: Vec<String> = vec![];
-                for v in row_matrix.iter() {
-                    if let Some(value) = v.get(i) {
-                        tmp.push(value.clone())
-                    } else {
-                        return Err("课程表解析错误".into());
-                    }
-                }
-                column_matrix.push(tmp.clone());
-            }
+            
 
-            Ok(column_matrix)
+            Ok(row_matrix)
         }
     }
 }

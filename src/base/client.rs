@@ -2,6 +2,7 @@ use reqwest_cookie_store::CookieStoreMutex;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 
+/// You must decide what account to use to invoke different method!
 #[derive(Debug, Clone)]
 pub struct Account {
     pub user: String,

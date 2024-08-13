@@ -1,6 +1,4 @@
-use serde::Serialize;
-
-#[derive(Serialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct GradeData {
     pub name: String,
     pub point: String,

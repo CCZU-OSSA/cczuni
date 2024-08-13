@@ -22,4 +22,5 @@ pub const ROOT_SSO_LOGIN: &'static str = "http://sso.cczu.edu.cn/sso/login";
 pub const ROOT_VPN: &'static str = "https://zmvpn.cczu.edu.cn";
 pub const ROOT_VPN_URL: LazyLock<Url> = LazyLock::new(|| Url::parse(ROOT_VPN).unwrap());
 pub const ROOT_YWTB: &'static str = "http://ywtb.cczu.edu.cn";
+// 
 pub const WECHAT_APP_API: &'static str = "http://202.195.102.7:8180";
