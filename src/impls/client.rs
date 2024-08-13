@@ -24,7 +24,6 @@ impl DefaultClient {
                 .redirect(Policy::none())
                 .build()
                 .unwrap(),
-
             cookies,
             properties: Arc::new(RwLock::new(HashMap::new())),
         }

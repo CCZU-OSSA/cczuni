@@ -5,7 +5,7 @@ use crate::{
     internals::{
         cookies_io::CookiesIOExt,
         fields::{DEFAULT_HEADERS, ROOT_SSO, ROOT_SSO_LOGIN, ROOT_VPN_URL, ROOT_YWTB},
-        recursion::recursion_cookies_handle,
+        recursion::recursion_redirect_handle,
     },
 };
 use base64::{prelude::BASE64_STANDARD, Engine};
@@ -71,7 +71,7 @@ pub async fn universal_sso_login(
             // redirect to webvpn root
             // recursion to get the login page
 
-            if let Ok(response) = recursion_cookies_handle(
+            if let Ok(response) = recursion_redirect_handle(
                 client.clone(),
                 response
                     .headers()
@@ -79,7 +79,6 @@ pub async fn universal_sso_login(
                     .unwrap()
                     .to_str()
                     .unwrap(),
-                &ROOT_VPN_URL,
             )
             .await
             {

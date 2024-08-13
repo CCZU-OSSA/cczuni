@@ -1,13 +1,11 @@
-use super::cookies_io::CookiesIOExt;
 use crate::{base::client::Client, internals::fields::DEFAULT_HEADERS};
 use async_recursion::async_recursion;
-use reqwest::{Response, StatusCode, Url};
+use reqwest::{Response, StatusCode};
 
 #[async_recursion]
-pub async fn recursion_cookies_handle(
+pub async fn recursion_redirect_handle(
     client: impl Client + Clone + Send + 'async_recursion,
     url: &str,
-    cookie_store_url: &Url,
 ) -> Result<Response, String> {
     if let Ok(response) = client
         .reqwest_client()
@@ -16,13 +14,8 @@ pub async fn recursion_cookies_handle(
         .send()
         .await
     {
-        client
-            .cookies()
-            .lock()
-            .unwrap()
-            .copy_cookies_raw(&Url::parse(url).unwrap(), cookie_store_url);
         if response.status() == StatusCode::FOUND {
-            return recursion_cookies_handle(
+            return recursion_redirect_handle(
                 client,
                 response
                     .headers()
@@ -30,7 +23,6 @@ pub async fn recursion_cookies_handle(
                     .unwrap()
                     .to_str()
                     .unwrap(),
-                cookie_store_url,
             )
             .await;
         }

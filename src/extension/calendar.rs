@@ -1,5 +1,6 @@
 use chrono::{Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use icalendar::{Alarm, Calendar, Component, Event, EventLike, Trigger};
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::read_to_string, future::Future, path::Path, sync::LazyLock};
 use uuid::Uuid;
 
@@ -13,14 +14,14 @@ pub static EVENT_PROP: LazyLock<HashMap<&'static str, &'static str>> = LazyLock:
     map
 });
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ScheduleElement {
     pub name: String,
     pub start_time: String,
     pub end_time: String,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Schedule {
     pub classtime: Vec<ScheduleElement>,
 }
@@ -41,10 +42,17 @@ impl Schedule {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum OddOrEven {
+    Odd = 0,
+    Even = 1,
+    Each = 2,
+}
+
 #[derive(Clone, Debug)]
 pub struct ClassInfo {
     pub name: String,
-    pub oe: usize,
+    pub odd_or_even: OddOrEven,
     pub day: usize,
     pub week: Vec<String>,
     pub classtime: Vec<usize>,
@@ -55,7 +63,7 @@ pub struct ClassInfo {
 impl ClassInfo {
     pub fn new(
         name: String,
-        oe: usize,
+        oe: OddOrEven,
         day: usize,
         week: Vec<String>,
         classtime: Vec<usize>,
@@ -63,7 +71,7 @@ impl ClassInfo {
     ) -> Self {
         Self {
             name,
-            oe,
+            odd_or_even: oe,
             day,
             week,
             classtime,
@@ -92,7 +100,14 @@ impl ClassInfo {
     pub fn identify(&self) -> String {
         uuid::Uuid::new_v3(
             &Uuid::NAMESPACE_DNS,
-            format!("{}-{}-{}-{}", self.name, self.oe, self.day, self.classroom).as_bytes(),
+            format!(
+                "{}-{}-{}-{}",
+                self.name,
+                self.odd_or_even.clone() as isize,
+                self.day,
+                self.classroom
+            )
+            .as_bytes(),
         )
         .to_string()
     }
@@ -109,9 +124,9 @@ impl ClassInfo {
                 firstdate + Duration::days(((end_week - 1) * 7 + self.day as i32 - 1) as i64);
 
             loop {
-                if self.oe == 3
-                    || ((self.oe == 1) && (start_week % 2 == 1))
-                    || (self.oe == 2) && (start_week % 2 == 0)
+                if self.odd_or_even == OddOrEven::Each
+                    || ((self.odd_or_even == OddOrEven::Odd) && (start_week % 2 == 1))
+                    || (self.odd_or_even == OddOrEven::Even) && (start_week % 2 == 0)
                 {
                     self.daylist.push(startdate.format("%Y%m%d").to_string());
                 }
@@ -140,10 +155,89 @@ pub trait ApplicationCalendarExt {
         schedule: Schedule,
         reminder: Option<i32>,
     ) -> impl Future<Output = Option<Calendar>>;
+
+    fn column_matrix_to_classinfo(
+        &self,
+        column_matrix: Vec<Vec<String>>,
+    ) -> TorErr<Vec<ClassInfo>> {
+        let mut course_info: HashMap<String, ClassInfo> = HashMap::new();
+        for (day, course_day) in column_matrix.iter().enumerate() {
+            for (time, courses_vec) in course_day.iter().enumerate() {
+                // Course A / Course B / Course C
+                let courses: Vec<String> = courses_vec
+                    .split("/")
+                    .filter(|v| !v.is_empty())
+                    .map(|v| v.to_string())
+                    .collect();
+                for course in courses {
+                    if course == "&nbsp;" {
+                        continue;
+                    }
+
+                    let id = Uuid::new_v3(
+                        &Uuid::NAMESPACE_DNS,
+                        format!("{}{}", course, day).as_bytes(),
+                    )
+                    .to_string();
+
+                    let chucks: Vec<String> = course
+                        .split(" ")
+                        .filter(|c| !c.is_empty())
+                        .map(|e| e.trim().to_string())
+                        .collect();
+
+                    let name = chucks[0].clone();
+                    let place = chucks[1].clone();
+                    let oe: String;
+                    let week: String;
+
+                    // Name Place Time
+                    if chucks.len() == 3 {
+                        oe = String::new();
+                        week = chucks[2].clone();
+                    } else {
+                        // Name Place OE Time
+                        oe = chucks[2].clone();
+                        week = chucks[3].clone();
+                    }
+
+                    if !course_info.contains_key(&id) {
+                        let info = ClassInfo::new(
+                            name,
+                            match oe.as_str() {
+                                "单" => OddOrEven::Odd,
+                                "双" => OddOrEven::Even,
+                                _ => OddOrEven::Each,
+                            },
+                            day + 1,
+                            week.split(",")
+                                .filter(|e| !e.is_empty())
+                                .map(|e| e.to_string())
+                                .collect(),
+                            vec![time + 1],
+                            place,
+                        );
+                        course_info.insert(id, info);
+                    } else {
+                        course_info.get_mut(&id).unwrap().add_classtime(time + 1);
+                    }
+                }
+            }
+        }
+
+        Ok(course_info
+            .values()
+            .into_iter()
+            .map(|e| e.clone())
+            .collect())
+    }
 }
 
 pub trait CalendarParser {
-    fn get_classinfo_vec(&self) -> impl Future<Output = TorErr<Vec<ClassInfo>>>;
+    /// The Matrix is indexed 0~6
+    ///
+    /// Each Vec<String> is in order.
+    fn get_classinfo_string_week(&self) -> impl Future<Output = TorErr<Vec<Vec<String>>>>;
 }
 
 impl<P: CalendarParser> ApplicationCalendarExt for P {
@@ -206,7 +300,6 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
             }
         }
 
-        // week
 
         let mut fweek = NaiveDateTime::new(
             NaiveDate::parse_from_str(&firstweekdate, "%Y%m%d").unwrap(),
@@ -242,8 +335,13 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
         schedule: Schedule,
         reminder: Option<i32>,
     ) -> Option<Calendar> {
-        if let Ok(classlist) = self.get_classinfo_vec().await {
-            self.generate_icalendar_from_classlist(classlist, firstweekdate, schedule, reminder)
+        if let Ok(classlist) = self.get_classinfo_string_week().await {
+            self.generate_icalendar_from_classlist(
+                self.column_matrix_to_classinfo(classlist).unwrap(),
+                firstweekdate,
+                schedule,
+                reminder,
+            )
         } else {
             None
         }

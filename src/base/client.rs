@@ -8,6 +8,15 @@ pub struct Account {
     pub password: String,
 }
 
+impl Default for Account {
+    fn default() -> Self {
+        Self {
+            user: Default::default(),
+            password: Default::default(),
+        }
+    }
+}
+
 impl Account {
     pub fn new(user: impl Into<String>, password: impl Into<String>) -> Self {
         Self {

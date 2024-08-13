@@ -112,5 +112,17 @@ impl<C: Client> JwqywxApplication<C> {
 
 #[cfg(feature = "calendar")]
 pub mod calendar {
-    // TODO
+    use crate::{
+        base::{client::Client, typing::TorErr},
+        extension::calendar::CalendarParser,
+    };
+
+    use super::JwqywxApplication;
+
+    impl<C: Client> CalendarParser for JwqywxApplication<C> {
+        /// Only get the latest data
+        async fn get_classinfo_string_week(&self) -> TorErr<Vec<Vec<String>>> {
+            todo!()
+        }
+    }
 }

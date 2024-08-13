@@ -9,18 +9,19 @@ pub mod extension;
 
 #[cfg(test)]
 mod test {
-    use reqwest::Url;
 
     use crate::{
         base::{
             app::{AppVisitor, Application},
             client::{Account, Client},
         },
+        extension::calendar::{ApplicationCalendarExt, CalendarParser},
         impls::{
-            apps::sso::jwcas::JwcasApplication, client::DefaultClient,
+            apps::sso::{self, jwcas::JwcasApplication},
+            client::DefaultClient,
             login::sso::SSOUniversalLogin,
         },
-        internals::recursion::recursion_cookies_handle,
+        internals::recursion::recursion_redirect_handle,
     };
     #[tokio::test]
     async fn spawn_test() {
@@ -42,13 +43,9 @@ mod test {
                     .send()
                     .await
                     .unwrap();
-                recursion_cookies_handle(
-                    self.client.clone(),
-                    " url",
-                    &Url::parse("input").unwrap(),
-                )
-                .await
-                .unwrap();
+                recursion_redirect_handle(self.client.clone(), " url")
+                    .await
+                    .unwrap();
             }
         }
 
@@ -59,5 +56,17 @@ mod test {
             let _ = client.visit::<JwcasApplication<_>>().await;
             foo.login().await;
         });
+    }
+
+    #[tokio::test]
+    async fn calendar() {
+        let client = DefaultClient::new(Account::default());
+        client.sso_universal_login().await.unwrap().unwrap();
+        let app = client.visit::<sso::jwcas::JwcasApplication<_>>().await;
+        app.login().await.unwrap();
+        println!(
+            "{:?}",
+            app.column_matrix_to_classinfo(app.get_classinfo_string_week().await.unwrap())
+        );
     }
 }

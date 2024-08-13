@@ -2,8 +2,6 @@ use reqwest::{cookie::Cookie as ReqwestCookie, Url};
 use reqwest_cookie_store::{CookieStore, RawCookie};
 
 pub trait CookiesIOExt {
-    #[allow(dead_code)]
-
     fn copy_cookies(&mut self, from: &Url, to: &Url) -> &mut Self;
     fn copy_cookies_raw(&mut self, from: &Url, to: &Url) -> &mut Self;
     fn add_reqwest_cookie(&mut self, cookie: ReqwestCookie, reqwest_url: &Url) -> &mut Self;
@@ -12,6 +10,8 @@ pub trait CookiesIOExt {
         cookies: impl Iterator<Item = ReqwestCookie<'a>>,
         reqwest_url: &Url,
     ) -> &mut Self;
+
+    fn headers(&mut self, url: &Url) -> String;
 }
 
 impl CookiesIOExt for CookieStore {
@@ -47,5 +47,13 @@ impl CookiesIOExt for CookieStore {
             self.add_reqwest_cookie(cookie, reqwest_url);
         });
         self
+    }
+
+    fn headers(&mut self, url: &Url) -> String {
+        self.matches(url)
+            .iter()
+            .map(|e| format!("{}={}", e.name(), e.value()))
+            .collect::<Vec<String>>()
+            .join("; ")
     }
 }

@@ -1,16 +1,16 @@
 use std::sync::LazyLock;
 
 use reqwest::{
-    header::{HeaderMap, HeaderValue},
+    header::{HeaderMap, HeaderValue, USER_AGENT},
     Url,
 };
 
 pub static DEFAULT_HEADERS: LazyLock<HeaderMap> = LazyLock::new(|| {
     let mut headers = HeaderMap::new();
     headers.insert(
-        "User-Agent",
+        USER_AGENT,
         HeaderValue::from_static(
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/116.0",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0",
         ),
     );
     headers
