@@ -28,12 +28,11 @@ rand = { version = "0.8", optional = true }
 uuid = { version = "1", features = ["v4", "v3"], optional = true }
 chrono = { version = "0.4", optional = true }
 icalendar = { version = "0.16", optional = true }
-regex = { version = "1", optional = true }
 
 
 [features]
-default = ["full"]
+default = []
 webvpn-login = ["dep:aes", "dep:cbc", "dep:rand"]
-calendar = ["dep:chrono", "dep:uuid", "dep:icalendar", "dep:regex"]
+calendar = ["dep:chrono", "dep:uuid", "dep:icalendar"]
 internals = []
 full = ["webvpn-login", "calendar", "internals"]
