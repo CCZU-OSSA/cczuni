@@ -108,9 +108,7 @@ pub mod calendar {
 
     use super::JwcasApplication;
     impl<C: Client + Clone + Send> CalendarParser for JwcasApplication<C> {
-        async fn get_classinfo_week_matrix(
-            &self,
-        ) -> TorErr<Vec<Vec<String>>> {
+        async fn get_classinfo_week_matrix(&self) -> TorErr<Vec<Vec<String>>> {
             let opt_text = self.get_classlist_html().await;
             if let None = opt_text {
                 return Err("获取页面错误");
@@ -138,8 +136,6 @@ pub mod calendar {
                     items
                 })
                 .collect();
-
-            
 
             Ok(row_matrix)
         }
