@@ -300,7 +300,6 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
             }
         }
 
-
         let mut fweek = NaiveDateTime::new(
             NaiveDate::parse_from_str(&firstweekdate, "%Y%m%d").unwrap(),
             NaiveTime::default(),
