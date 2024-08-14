@@ -4,7 +4,10 @@ use reqwest::StatusCode;
 
 use crate::{
     base::{client::Client, typing::TorErr},
-    internals::fields::{DEFAULT_HEADERS, ROOT_SSO_LOGIN, ROOT_VPN},
+    internals::{
+        error::ERROR_REQUEST_FAILED,
+        fields::{DEFAULT_HEADERS, ROOT_SSO_LOGIN, ROOT_VPN},
+    },
 };
 
 use super::webvpn_type::{ElinkServiceInfo, ElinkUserInfo, ElinkUserServiceInfo};
@@ -50,7 +53,7 @@ impl<C: Client> WebVPNService for C {
                 return Ok(serde_json::from_str(json.as_str()).unwrap());
             }
         }
-        Err("获取失败，请稍后重试")
+        Err(ERROR_REQUEST_FAILED)
     }
 
     async fn webvpn_get_tree_with_service(
@@ -79,7 +82,7 @@ impl<C: Client> WebVPNService for C {
                 return Ok(serde_json::from_str(json.as_str()).unwrap());
             }
         }
-        Err("获取失败，请稍后重试")
+        Err(ERROR_REQUEST_FAILED)
     }
 
     async fn webvpn_get_service_by_user(
@@ -106,7 +109,7 @@ impl<C: Client> WebVPNService for C {
                 return Ok(serde_json::from_str(json.as_str()).unwrap());
             }
         }
-        Err("获取失败，请稍后重试".into())
+        Err(ERROR_REQUEST_FAILED)
     }
 
     async fn webvpn_get_visit_service_by_user(
@@ -132,7 +135,7 @@ impl<C: Client> WebVPNService for C {
                 return Ok(serde_json::from_str(json.as_str()).unwrap());
             }
         }
-        Err("获取失败，请稍后重试".into())
+        Err(ERROR_REQUEST_FAILED)
     }
 
     /// Client Redirect Policy: [`reqwest::redirect::Policy::none()`]

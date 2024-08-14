@@ -35,17 +35,17 @@ There are some risks to use with it.
 
 In `cczuni`, we use `Arc` and `tokio::sync` to ensure the thread safe.
 
-### Faster Speed
+### Faster Speed & Smaller Size
 
 With less unnecessary clone, new...
 
-`cczuni` is faster, I think.
+`cczuni` is faster and smaller!
 
-### Flexible Struct
+### Flexible Trait.
 
 In `cczuni`, most traits are impl for generic `Client`.
 
-We provided a default `crate::impls::client::DefaultClient`, If you want to custom a `Client`, just impl `Client` for `SomeStruct`.
+We provide a default `crate::impls::client::DefaultClient`, If you want to custom a `Client`, just impl `Client`.
 
 ## Docs
 

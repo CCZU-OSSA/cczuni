@@ -7,6 +7,7 @@ use crate::base::app::Application;
 use crate::base::client::Client;
 use crate::base::typing::{EmptyOrErr, TorErr};
 use crate::impls::services::sso_redirect::SSORedirect;
+use crate::internals::error::ERROR_REQUEST_FAILED;
 use crate::internals::recursion::recursion_redirect_handle;
 
 use super::jwcas_type::GradeData;
@@ -64,7 +65,7 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
         }
     }
 
-    pub async fn get_gradeinfo_vec(&self) -> Result<Vec<GradeData>, String> {
+    pub async fn get_gradeinfo_vec(&self) -> TorErr<Vec<GradeData>> {
         if let Some(text) = self.get_gradelist_html().await {
             let tb_up = Selector::parse(r#"table[id="GVkbk"]"#).unwrap();
             let selector = Selector::parse(r#"tr[class="dg1-item"]"#).unwrap();
@@ -84,7 +85,7 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
                 })
                 .collect())
         } else {
-            Err("获取页面失败".into())
+            Err(ERROR_REQUEST_FAILED)
         }
     }
 }
@@ -93,7 +94,7 @@ fn extract_string(element: Option<&ElementRef>) -> String {
     if let Some(element) = element {
         element.text().next().unwrap().to_string()
     } else {
-        "None".into()
+        String::new()
     }
 }
 
@@ -105,16 +106,12 @@ pub mod calendar {
     use crate::base::client::Client;
     use crate::base::typing::TorErr;
     use crate::extension::calendar::CalendarParser;
+    use crate::internals::error::ERROR_PAGE_CONTENT;
 
     use super::JwcasApplication;
     impl<C: Client + Clone + Send> CalendarParser for JwcasApplication<C> {
         async fn get_classinfo_week_matrix(&self) -> TorErr<Vec<Vec<String>>> {
-            let opt_text = self.get_classlist_html().await;
-            if let None = opt_text {
-                return Err("获取页面错误");
-            }
-
-            let text = opt_text.unwrap();
+            let text = self.get_classlist_html().await.ok_or(ERROR_PAGE_CONTENT)?;
 
             let doc = Html::parse_document(&text);
             let tb_dn_seletor = Selector::parse(r#"table[id="GVxkkb"]"#).unwrap();

@@ -4,6 +4,7 @@ use crate::{
     base::{client::Client, typing::TorErr},
     internals::{
         cookies_io::CookiesIOExt,
+        error::{ERROR_ACCOUNT_LOGIN, ERROR_REQUEST_FAILED, ERROR_WEBVPN},
         fields::{DEFAULT_HEADERS, ROOT_SSO, ROOT_SSO_LOGIN, ROOT_VPN_URL, ROOT_YWTB},
         recursion::recursion_redirect_handle,
     },
@@ -45,7 +46,7 @@ impl<C: Client + Clone + Send> SSOUniversalLogin for C {
 
                     Ok(Some(data))
                 } else {
-                    Err("Get `ElinkLoginInfo` failed")
+                    Err(ERROR_REQUEST_FAILED)
                 }
             }
             SSOLoginConnectType::COMMON => {
@@ -62,7 +63,7 @@ impl<C: Client + Clone + Send> SSOUniversalLogin for C {
     }
 }
 
-pub async fn universal_sso_login(
+async fn universal_sso_login(
     client: impl Client + Clone + Send,
 ) -> Result<SSOUniversalLoginInfo, &'static str> {
     if let Ok(response) = client.reqwest_client().get(ROOT_SSO_LOGIN).send().await {
@@ -99,7 +100,7 @@ pub async fn universal_sso_login(
                 {
                     let redirect_location_header = response.headers().get("location");
                     if let None = redirect_location_header {
-                        return Err("跳转 WebVPN 失败");
+                        return Err(ERROR_WEBVPN);
                     }
                     let redirect_location = redirect_location_header.unwrap().to_str().unwrap();
                     if let Ok(response) = client
@@ -123,6 +124,7 @@ pub async fn universal_sso_login(
             }
         }
         // connect `cczu` and don't need to redirect
+        // TODO: Remove the cookies Copy here may cause some problems, need debug
         if response.status() == StatusCode::OK {
             let dom = response.text().await.unwrap();
             let mut login_param = parse_hidden_values(dom.as_str());
@@ -144,7 +146,7 @@ pub async fn universal_sso_login(
             };
         }
     }
-    Err("无法登录！请检查账户密码！")
+    Err(ERROR_ACCOUNT_LOGIN)
 }
 
 pub fn parse_hidden_values(html: &str) -> HashMap<String, String> {

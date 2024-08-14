@@ -164,7 +164,7 @@ pub trait ApplicationCalendarExt {
                 if let Some(value) = v.get(i) {
                     tmp.push(value.clone())
                 } else {
-                    return Err("课程表解析错误".into());
+                    return Err("课程表解析错误");
                 }
             }
             column_matrix.push(tmp.clone());

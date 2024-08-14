@@ -53,7 +53,7 @@ impl Into<SSOLoginConnectType> for Property {
 impl Into<SSOLoginConnectType> for HashMap<&'static str, Property> {
     fn into(self) -> SSOLoginConnectType {
         self.get(SSOLoginConnectType::key())
-            .expect("Cant get LoginConnectType! Need Login?")
+            .expect("Can't get LoginConnectType! Need Login?")
             .clone()
             .into()
     }

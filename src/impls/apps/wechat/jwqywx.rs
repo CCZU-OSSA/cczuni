@@ -133,7 +133,7 @@ pub mod calendar {
         base::{client::Client, typing::TorErr},
         extension::calendar::{CalendarParser, TermCalendarParser},
         impls::apps::wechat::jwqywx_type::{Message, RowCourses},
-        internals::{exceptions::EXCEPTION_REQUEST_FAILED, fields::WECHAT_APP_API},
+        internals::{error::ERROR_REQUEST_FAILED, fields::WECHAT_APP_API},
     };
 
     use super::JwqywxApplication;
@@ -155,7 +155,7 @@ pub mod calendar {
                 let message: Message<RowCourses> = response.json().await.unwrap();
                 return Ok(message.message.into_iter().map(|e| e.into()).collect());
             }
-            Err(EXCEPTION_REQUEST_FAILED)
+            Err(ERROR_REQUEST_FAILED)
         }
     }
 

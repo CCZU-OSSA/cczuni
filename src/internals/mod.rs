@@ -1,4 +1,4 @@
 pub mod cookies_io;
-pub mod exceptions;
+pub mod error;
 pub mod fields;
 pub mod recursion;
