@@ -17,10 +17,7 @@ mod test {
         },
         extension::calendar::{ApplicationCalendarExt, CalendarParser},
         impls::{
-            apps::{
-                sso::jwcas::JwcasApplication,
-                wechat::jwqywx::JwqywxApplication,
-            },
+            apps::{sso::jwcas::JwcasApplication, wechat::jwqywx::JwqywxApplication},
             client::DefaultClient,
             login::sso::SSOUniversalLogin,
         },
