@@ -10,7 +10,9 @@ use crate::{
     },
 };
 
-use super::webvpn_type::{ElinkServiceInfo, ElinkUserInfo, ElinkUserServiceInfo};
+use super::webvpn_type::{
+    ElinkProxyData, ElinkServiceInfo, ElinkUserInfo, ElinkUserServiceInfo, Message,
+};
 
 /// Must be used in WebVPN mode
 ///
@@ -34,6 +36,10 @@ pub trait WebVPNService {
         &self,
         user_id: impl Into<String>,
     ) -> impl Future<Output = TorErr<ElinkUserServiceInfo>>;
+    fn webvpn_get_proxy_service(
+        &self,
+        user_id: impl Into<String>,
+    ) -> impl Future<Output = TorErr<Message<ElinkProxyData>>>;
 }
 
 impl<C: Client> WebVPNService for C {
@@ -144,5 +150,26 @@ impl<C: Client> WebVPNService for C {
             return response.status() == StatusCode::FOUND;
         }
         false
+    }
+
+    async fn webvpn_get_proxy_service(
+        &self,
+        user_id: impl Into<String>,
+    ) -> TorErr<Message<ElinkProxyData>> {
+        if let Ok(response) = self
+            .reqwest_client()
+            .get(format!(
+                "{}/enlink/api/client/user/terminal/rules/{}",
+                ROOT_VPN,
+                user_id.into()
+            ))
+            .send()
+            .await
+        {
+            if let Ok(json) = response.text().await {
+                return Ok(serde_json::from_str(json.as_str()).unwrap());
+            }
+        }
+        Err(ERROR_REQUEST_FAILED)
     }
 }

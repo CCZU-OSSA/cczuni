@@ -1,6 +1,32 @@
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug, Clone)]
+pub struct Message<T> {
+    pub code: Option<String>,
+    pub messages: Option<String>,
+    pub data: Option<T>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct ElinkProxyData {
+    pub token: String,
+    pub server: String,
+    pub tunnel_free_interval: i32,
+    pub tunnel_free_status: bool,
+    pub spa_status: bool,
+    pub fwd_status: bool,
+    pub spa_port: String,
+    pub admin_port: String,
+    // TODO May fill other data future
+    pub gateway_list: ElinkProxyGatewayList,
+}
+#[derive(Deserialize, Debug, Clone)]
+pub struct ElinkProxyGatewayList {
+    pub dns: String,
+    // ...
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct ElinkGroupInfo {
     pub name: Option<String>,
     pub id: Option<String>,
