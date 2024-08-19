@@ -100,7 +100,6 @@ fn extract_string(element: Option<&ElementRef>) -> String {
 
 #[cfg(feature = "calendar")]
 pub mod calendar {
-
     use scraper::{Html, Selector};
 
     use crate::base::client::Client;
@@ -112,19 +111,28 @@ pub mod calendar {
     impl<C: Client + Clone + Send> CalendarParser for JwcasApplication<C> {
         async fn get_classinfo_week_matrix(&self) -> TorErr<Vec<Vec<String>>> {
             let text = self.get_classlist_html().await.ok_or(ERROR_PAGE_CONTENT)?;
-
             let doc = Html::parse_document(&text);
             let tb_dn_seletor = Selector::parse(r#"table[id="GVxkkb"]"#).unwrap();
 
             let tb_dn_rowseletor = Selector::parse(r#"tr[class="dg1-item"]"#).unwrap();
             let tb_dn_itemseletor = Selector::parse(r#"td"#).unwrap();
-
+            let tb_dn_itemseletor_with_font = Selector::parse(r#"td > font"#).unwrap();
             let row_matrix: Vec<Vec<String>> = doc
                 .select(&tb_dn_seletor)
                 .next()
                 .unwrap()
                 .select(&tb_dn_rowseletor)
                 .map(|e| {
+                    let mut items: Vec<String> = e
+                        .select(&tb_dn_itemseletor_with_font)
+                        .map(|item| item.inner_html())
+                        .collect();
+                    if !items.is_empty() {
+                        items.remove(0);
+
+                        return items;
+                    }
+
                     let mut items: Vec<String> = e
                         .select(&tb_dn_itemseletor)
                         .map(|item| item.inner_html())

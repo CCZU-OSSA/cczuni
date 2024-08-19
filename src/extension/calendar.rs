@@ -195,7 +195,6 @@ pub trait ApplicationCalendarExt {
                         .filter(|c| !c.is_empty())
                         .map(|e| e.trim().to_string())
                         .collect();
-
                     let name = chucks[0].clone();
                     let place = chucks[1].clone();
                     let oe: String;
