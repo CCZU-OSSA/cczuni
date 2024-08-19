@@ -149,10 +149,7 @@ async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUn
             };
         }
     }
-    Err(tokio::io::Error::new(
-        ErrorKind::Other,
-        "Login Failed",
-    ))
+    Err(tokio::io::Error::new(ErrorKind::Other, "Login Failed"))
 }
 
 pub fn parse_hidden_values(html: &str) -> HashMap<String, String> {
