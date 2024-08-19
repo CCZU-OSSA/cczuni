@@ -7,6 +7,7 @@ pub(crate) mod internals;
 
 pub mod extension;
 
+#[cfg(feature = "full")]
 #[cfg(test)]
 mod test {
 
