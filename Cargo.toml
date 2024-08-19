@@ -31,7 +31,7 @@ icalendar = { version = "0.16", optional = true }
 
 
 [features]
-default = ["full"]
+default = []
 webvpn-login = ["dep:aes", "dep:cbc", "dep:rand"]
 calendar = ["dep:chrono", "dep:uuid", "dep:icalendar"]
 internals = []
