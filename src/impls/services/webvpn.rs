@@ -1,13 +1,10 @@
-use std::{collections::HashMap, future::Future};
+use std::{collections::HashMap, future::Future, io::ErrorKind};
 
 use reqwest::StatusCode;
 
 use crate::{
     base::{client::Client, typing::TorErr},
-    internals::{
-        error::ERROR_REQUEST_FAILED,
-        fields::{DEFAULT_HEADERS, ROOT_SSO_LOGIN, ROOT_VPN},
-    },
+    internals::fields::{DEFAULT_HEADERS, ROOT_SSO_LOGIN, ROOT_VPN},
 };
 
 use super::webvpn_type::{
@@ -59,7 +56,10 @@ impl<C: Client> WebVPNService for C {
                 return Ok(serde_json::from_str(json.as_str()).unwrap());
             }
         }
-        Err(ERROR_REQUEST_FAILED)
+        Err(tokio::io::Error::new(
+            ErrorKind::Other,
+            "Get User Info failed",
+        ))
     }
 
     async fn webvpn_get_tree_with_service(
@@ -88,7 +88,10 @@ impl<C: Client> WebVPNService for C {
                 return Ok(serde_json::from_str(json.as_str()).unwrap());
             }
         }
-        Err(ERROR_REQUEST_FAILED)
+        Err(tokio::io::Error::new(
+            ErrorKind::Other,
+            "Get Tree Service failed",
+        ))
     }
 
     async fn webvpn_get_service_by_user(
@@ -115,7 +118,10 @@ impl<C: Client> WebVPNService for C {
                 return Ok(serde_json::from_str(json.as_str()).unwrap());
             }
         }
-        Err(ERROR_REQUEST_FAILED)
+        Err(tokio::io::Error::new(
+            ErrorKind::Other,
+            "Get User Service failed",
+        ))
     }
 
     async fn webvpn_get_visit_service_by_user(
@@ -141,7 +147,10 @@ impl<C: Client> WebVPNService for C {
                 return Ok(serde_json::from_str(json.as_str()).unwrap());
             }
         }
-        Err(ERROR_REQUEST_FAILED)
+        Err(tokio::io::Error::new(
+            ErrorKind::Other,
+            "Get User Visit Service failed",
+        ))
     }
 
     /// Client Redirect Policy: [`reqwest::redirect::Policy::none()`]
@@ -170,6 +179,9 @@ impl<C: Client> WebVPNService for C {
                 return Ok(serde_json::from_str(json.as_str()).unwrap());
             }
         }
-        Err(ERROR_REQUEST_FAILED)
+        Err(tokio::io::Error::new(
+            ErrorKind::Other,
+            "Get Proxy Service failed",
+        ))
     }
 }

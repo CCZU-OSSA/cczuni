@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, io::ErrorKind};
 
 use crate::{
     base::{client::Client, typing::TorErr},
@@ -76,6 +76,9 @@ impl<C: Client> WebVPNLogin for C {
                 }
             }
         };
-        Err("普通登录失败，请检查账号密码是否错误...")
+        Err(tokio::io::Error::new(
+            ErrorKind::ConnectionAborted,
+            "普通登录失败，请检查账号密码是否错误...",
+        ))
     }
 }

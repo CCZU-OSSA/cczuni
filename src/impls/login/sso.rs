@@ -1,10 +1,9 @@
-use std::{collections::HashMap, future::Future};
+use std::{collections::HashMap, future::Future, io::ErrorKind};
 
 use crate::{
     base::{client::Client, typing::TorErr},
     internals::{
         cookies_io::CookiesIOExt,
-        error::{ERROR_ACCOUNT_LOGIN, ERROR_REQUEST_FAILED, ERROR_WEBVPN},
         fields::{DEFAULT_HEADERS, ROOT_SSO, ROOT_SSO_LOGIN, ROOT_VPN_URL, ROOT_YWTB},
         recursion::recursion_redirect_handle,
     },
@@ -46,7 +45,10 @@ impl<C: Client + Clone + Send> SSOUniversalLogin for C {
 
                     Ok(Some(data))
                 } else {
-                    Err(ERROR_REQUEST_FAILED)
+                    Err(tokio::io::Error::new(
+                        ErrorKind::Other,
+                        "Get `EnlinkLoginInfo` failed",
+                    ))
                 }
             }
             SSOLoginConnectType::COMMON => {
@@ -63,9 +65,7 @@ impl<C: Client + Clone + Send> SSOUniversalLogin for C {
     }
 }
 
-async fn universal_sso_login(
-    client: impl Client + Clone + Send,
-) -> Result<SSOUniversalLoginInfo, &'static str> {
+async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUniversalLoginInfo> {
     if let Ok(response) = client.reqwest_client().get(ROOT_SSO_LOGIN).send().await {
         // use webvpn
         if response.status() == StatusCode::FOUND {
@@ -100,7 +100,10 @@ async fn universal_sso_login(
                 {
                     let redirect_location_header = response.headers().get("location");
                     if let None = redirect_location_header {
-                        return Err(ERROR_WEBVPN);
+                        return Err(tokio::io::Error::new(
+                            ErrorKind::NotFound,
+                            "Redirect to None",
+                        ));
                     }
                     let redirect_location = redirect_location_header.unwrap().to_str().unwrap();
                     if let Ok(response) = client
@@ -146,7 +149,10 @@ async fn universal_sso_login(
             };
         }
     }
-    Err(ERROR_ACCOUNT_LOGIN)
+    Err(tokio::io::Error::new(
+        ErrorKind::Other,
+        "Login Failed",
+    ))
 }
 
 pub fn parse_hidden_values(html: &str) -> HashMap<String, String> {

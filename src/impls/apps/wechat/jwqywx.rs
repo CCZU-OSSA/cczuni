@@ -127,13 +127,15 @@ impl<C: Client> JwqywxApplication<C> {
 
 #[cfg(feature = "calendar")]
 pub mod calendar {
+    use std::io::ErrorKind;
+
     use serde_json::json;
 
     use crate::{
         base::{client::Client, typing::TorErr},
         extension::calendar::{CalendarParser, TermCalendarParser},
         impls::apps::wechat::jwqywx_type::{Message, RowCourses},
-        internals::{error::ERROR_REQUEST_FAILED, fields::WECHAT_APP_API},
+        internals::fields::WECHAT_APP_API,
     };
 
     use super::JwqywxApplication;
@@ -155,7 +157,10 @@ pub mod calendar {
                 let message: Message<RowCourses> = response.json().await.unwrap();
                 return Ok(message.message.into_iter().map(|e| e.into()).collect());
             }
-            Err(ERROR_REQUEST_FAILED)
+            Err(tokio::io::Error::new(
+                ErrorKind::Other,
+                "Get Class Info failed",
+            ))
         }
     }
 

@@ -1,2 +1,2 @@
-pub type TorErr<T> = std::result::Result<T, &'static str>;
+pub type TorErr<T> = tokio::io::Result<T>;
 pub type EmptyOrErr = TorErr<()>;

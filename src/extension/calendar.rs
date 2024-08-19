@@ -1,7 +1,10 @@
 use chrono::{Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use icalendar::{Alarm, Calendar, Component, Event, EventLike, Trigger};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs::read_to_string, future::Future, path::Path, sync::LazyLock};
+use std::{
+    collections::HashMap, fs::read_to_string, future::Future, io::ErrorKind, path::Path,
+    sync::LazyLock,
+};
 use uuid::Uuid;
 
 use crate::base::typing::TorErr;
@@ -148,13 +151,13 @@ pub trait ApplicationCalendarExt {
         firstweekdate: String,
         schedule: Schedule,
         reminder: Option<i32>,
-    ) -> Option<Calendar>;
+    ) -> TorErr<Calendar>;
     fn generate_icalendar(
         &self,
         firstweekdate: String,
         schedule: Schedule,
         reminder: Option<i32>,
-    ) -> impl Future<Output = Option<Calendar>>;
+    ) -> impl Future<Output = TorErr<Calendar>>;
 
     fn row_matrix_to_classinfo(&self, row_matrix: Vec<Vec<String>>) -> TorErr<Vec<ClassInfo>> {
         let mut column_matrix: Vec<Vec<String>> = vec![];
@@ -164,7 +167,10 @@ pub trait ApplicationCalendarExt {
                 if let Some(value) = v.get(i) {
                     tmp.push(value.clone())
                 } else {
-                    return Err("课程表解析错误");
+                    return Err(tokio::io::Error::new(
+                        ErrorKind::InvalidData,
+                        "Parse Classinfo error",
+                    ));
                 }
             }
             column_matrix.push(tmp.clone());
@@ -264,7 +270,7 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
         firstweekdate: String,
         schedule: Schedule,
         reminder: Option<i32>,
-    ) -> Option<Calendar> {
+    ) -> TorErr<Calendar> {
         let mut calendar = Calendar::new();
         calendar.timezone("Asia/Shanghai").name("课程表");
         let mut classlist = classlist;
@@ -273,12 +279,18 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
         });
 
         for info in classlist.iter() {
-            let start_time = schedule.classtime[info.classtime.first()? - 1]
-                .clone()
-                .start_time;
-            let end_time = schedule.classtime[info.classtime.last()? - 1]
-                .clone()
-                .end_time;
+            let start_time =
+                schedule.classtime[info.classtime.first().ok_or_else(|| {
+                    tokio::io::Error::new(ErrorKind::InvalidData, "No First data")
+                })? - 1]
+                    .clone()
+                    .start_time;
+            let end_time =
+                schedule.classtime[info.classtime.last().ok_or_else(|| {
+                    tokio::io::Error::new(ErrorKind::InvalidData, "No Last data")
+                })? - 1]
+                    .clone()
+                    .end_time;
             let create_time = Utc::now();
             for day in info.daylist.iter() {
                 let uid = format!("{}@gmail.com", Uuid::new_v4());
@@ -342,7 +354,7 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
             fweek += Duration::days(7);
         }
 
-        Some(calendar)
+        Ok(calendar)
     }
 
     async fn generate_icalendar(
@@ -350,16 +362,14 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
         firstmonday: String,
         schedule: Schedule,
         reminder: Option<i32>,
-    ) -> Option<Calendar> {
-        if let Ok(classlist) = self.get_classinfo_week_matrix().await {
-            self.generate_icalendar_from_classlist(
-                self.row_matrix_to_classinfo(classlist).unwrap(),
-                firstmonday,
-                schedule,
-                reminder,
-            )
-        } else {
-            None
-        }
+    ) -> TorErr<Calendar> {
+        let classlist = self.get_classinfo_week_matrix().await?;
+
+        self.generate_icalendar_from_classlist(
+            self.row_matrix_to_classinfo(classlist).unwrap(),
+            firstmonday,
+            schedule,
+            reminder,
+        )
     }
 }

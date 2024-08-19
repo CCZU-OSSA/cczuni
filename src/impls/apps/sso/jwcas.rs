@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::io::ErrorKind;
 
 use reqwest::StatusCode;
 use scraper::{ElementRef, Html, Selector};
@@ -7,7 +8,6 @@ use crate::base::app::Application;
 use crate::base::client::Client;
 use crate::base::typing::{EmptyOrErr, TorErr};
 use crate::impls::services::sso_redirect::SSORedirect;
-use crate::internals::error::ERROR_REQUEST_FAILED;
 use crate::internals::recursion::recursion_redirect_handle;
 
 use super::jwcas_type::GradeData;
@@ -43,50 +43,48 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
         Ok(())
     }
 
-    pub async fn get_classlist_html(&self) -> Option<String> {
+    pub async fn get_classlist_html(&self) -> TorErr<String> {
         self.get_html("/web_jxrw/cx_kb_xsgrkb.aspx").await
     }
 
-    pub async fn get_gradelist_html(&self) -> Option<String> {
+    pub async fn get_gradelist_html(&self) -> TorErr<String> {
         self.get_html("/web_cjgl/cx_cj_jxjhcj_xh.aspx").await
     }
 
-    pub async fn get_html(&self, service: impl Display) -> Option<String> {
+    pub async fn get_html(&self, service: impl Display) -> TorErr<String> {
         let api = format!("{}{}", self.root, service);
 
         if let Ok(response) = self.client.reqwest_client().get(api).send().await {
-            if response.status() != StatusCode::OK {
-                None
-            } else {
-                Some(response.text().await.unwrap())
+            if response.status() == StatusCode::OK {
+                return Ok(response.text().await.unwrap());
             }
-        } else {
-            None
         }
+
+        Err(tokio::io::Error::new(
+            ErrorKind::Other,
+            format!("Get {service} failed"),
+        ))
     }
 
     pub async fn get_gradeinfo_vec(&self) -> TorErr<Vec<GradeData>> {
-        if let Some(text) = self.get_gradelist_html().await {
-            let tb_up = Selector::parse(r#"table[id="GVkbk"]"#).unwrap();
-            let selector = Selector::parse(r#"tr[class="dg1-item"]"#).unwrap();
-            let dom = Html::parse_document(&text);
-            Ok(dom
-                .select(&tb_up)
-                .next()
-                .unwrap()
-                .select(&selector)
-                .map(|e| {
-                    let childs: Vec<ElementRef> = e.child_elements().collect();
-                    GradeData {
-                        name: extract_string(childs.get(5)),
-                        point: extract_string(childs.get(8)),
-                        grade: extract_string(childs.get(9)),
-                    }
-                })
-                .collect())
-        } else {
-            Err(ERROR_REQUEST_FAILED)
-        }
+        let text = self.get_gradelist_html().await?;
+        let tb_up = Selector::parse(r#"table[id="GVkbk"]"#).unwrap();
+        let selector = Selector::parse(r#"tr[class="dg1-item"]"#).unwrap();
+        let dom = Html::parse_document(&text);
+        Ok(dom
+            .select(&tb_up)
+            .next()
+            .unwrap()
+            .select(&selector)
+            .map(|e| {
+                let childs: Vec<ElementRef> = e.child_elements().collect();
+                GradeData {
+                    name: extract_string(childs.get(5)),
+                    point: extract_string(childs.get(8)),
+                    grade: extract_string(childs.get(9)),
+                }
+            })
+            .collect())
     }
 }
 
@@ -105,12 +103,11 @@ pub mod calendar {
     use crate::base::client::Client;
     use crate::base::typing::TorErr;
     use crate::extension::calendar::CalendarParser;
-    use crate::internals::error::ERROR_PAGE_CONTENT;
 
     use super::JwcasApplication;
     impl<C: Client + Clone + Send> CalendarParser for JwcasApplication<C> {
         async fn get_classinfo_week_matrix(&self) -> TorErr<Vec<Vec<String>>> {
-            let text = self.get_classlist_html().await.ok_or(ERROR_PAGE_CONTENT)?;
+            let text = self.get_classlist_html().await?;
             let doc = Html::parse_document(&text);
             let tb_dn_seletor = Selector::parse(r#"table[id="GVxkkb"]"#).unwrap();
 
