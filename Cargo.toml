@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
-reqwest = { version = "0.12", features = [
+reqwest = { version = "0.12", default-features = false, features = [
     "cookies",
     "multipart",           # Support Post a Form
     "native-tls-vendored", # Support Cross-Platform Compile in some situation
@@ -31,7 +31,7 @@ icalendar = { version = "0.16", optional = true }
 
 
 [features]
-default = []
+default = ["full"]
 webvpn-login = ["dep:aes", "dep:cbc", "dep:rand"]
 calendar = ["dep:chrono", "dep:uuid", "dep:icalendar"]
 internals = []
