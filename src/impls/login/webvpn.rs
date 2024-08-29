@@ -72,7 +72,7 @@ impl<C: Client> WebVPNLogin for C {
                 {
                     let json =
                         String::from_utf8(BASE64_STANDARD.decode(cookie.value()).unwrap()).unwrap();
-                    return Ok(serde_json::from_str(json.as_str()).unwrap());
+                    return Ok(serde_json::from_str(json.as_str())?);
                 }
             }
         };

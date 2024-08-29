@@ -1,10 +1,10 @@
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, ORIGIN, REFERER};
 use serde_json::json;
-use std::sync::Arc;
+use std::{io::ErrorKind, sync::Arc};
 use tokio::sync::RwLock;
 
 use crate::{
-    base::{app::Application, client::Client},
+    base::{app::Application, client::Client, typing::TorErr},
     internals::fields::{DEFAULT_HEADERS, WECHAT_APP_API},
 };
 
@@ -34,7 +34,7 @@ impl<C: Client> Application<C> for JwqywxApplication<C> {
 }
 
 impl<C: Client> JwqywxApplication<C> {
-    pub async fn login(&self) -> Option<Message<LoginUserData>> {
+    pub async fn login(&self) -> TorErr<Message<LoginUserData>> {
         let account = self.client.account();
         let result = self
             .client
@@ -51,16 +51,16 @@ impl<C: Client> JwqywxApplication<C> {
             .await;
         if let Ok(response) = result {
             if let Ok(text) = response.text().await {
-                let message = serde_json::from_str::<Message<LoginUserData>>(&text).unwrap();
-                {
-                    self.write_token(format!("Bearer {}", message.token.clone().unwrap()))
-                        .await;
-                    return Some(message);
-                }
+                let message = serde_json::from_str::<Message<LoginUserData>>(&text)?;
+                self.write_token(format!("Bearer {}", message.token.clone().unwrap()))
+                    .await;
+                return Ok(message);
             }
         }
-
-        None
+        Err(tokio::io::Error::new(
+            ErrorKind::Other,
+            "Jwqywx Login Failed",
+        ))
     }
 
     async fn write_token(&self, token: String) {
@@ -77,7 +77,7 @@ impl<C: Client> JwqywxApplication<C> {
         *self.headers.write().await = header;
     }
 
-    pub async fn get_grades(&self) -> Option<Message<CourseGrade>> {
+    pub async fn get_grades(&self) -> TorErr<Message<CourseGrade>> {
         let result = self
             .client
             .reqwest_client()
@@ -89,12 +89,15 @@ impl<C: Client> JwqywxApplication<C> {
             .send()
             .await;
         if let Ok(response) = result {
-            return Some(response.json().await.unwrap());
+            return Ok(response
+                .json()
+                .await
+                .map_err(|err| tokio::io::Error::new(ErrorKind::Other, err.to_string()))?);
         }
-        None
+        Err(tokio::io::Error::new(ErrorKind::Other, "Request Failed"))
     }
 
-    pub async fn get_points(&self) -> Option<Message<StudentPoint>> {
+    pub async fn get_points(&self) -> TorErr<Message<StudentPoint>> {
         let result = self
             .client
             .reqwest_client()
@@ -106,12 +109,15 @@ impl<C: Client> JwqywxApplication<C> {
             .send()
             .await;
         if let Ok(response) = result {
-            return Some(response.json().await.unwrap());
+            return Ok(response
+                .json()
+                .await
+                .map_err(|err| tokio::io::Error::new(ErrorKind::Other, err.to_string()))?);
         }
-        None
+        Err(tokio::io::Error::new(ErrorKind::Other, "Request Failed"))
     }
 
-    pub async fn terms(&self) -> Option<Message<Term>> {
+    pub async fn terms(&self) -> TorErr<Message<Term>> {
         let result = self
             .client
             .reqwest_client()
@@ -119,9 +125,12 @@ impl<C: Client> JwqywxApplication<C> {
             .send()
             .await;
         if let Ok(response) = result {
-            return Some(response.json().await.unwrap());
+            return Ok(response
+                .json()
+                .await
+                .map_err(|err| tokio::io::Error::new(ErrorKind::Other, err.to_string()))?);
         }
-        None
+        Err(tokio::io::Error::new(ErrorKind::Other, "Request Failed"))
     }
 }
 

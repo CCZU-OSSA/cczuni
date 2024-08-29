@@ -57,8 +57,8 @@ mod test {
             let _ = client.visit::<JwcasApplication<_>>().await;
             foo.login().await;
             let app = client.visit::<JwqywxApplication<_>>().await;
-            app.login().await;
-            app.get_grades().await;
+            app.login().await.unwrap();
+            app.get_grades().await.unwrap();
         });
     }
 

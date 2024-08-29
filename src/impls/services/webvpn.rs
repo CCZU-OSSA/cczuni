@@ -8,7 +8,7 @@ use crate::{
 };
 
 use super::webvpn_type::{
-    ElinkProxyData, ElinkServiceInfo, ElinkUserInfo, ElinkUserServiceInfo, Message,
+    ElinkProxyData, ElinkServiceData, ElinkServiceInfoData, ElinkUserInfoData, Message,
 };
 
 /// Must be used in WebVPN mode
@@ -20,19 +20,19 @@ pub trait WebVPNService {
     fn webvpn_get_user_info(
         &self,
         user_id: impl Into<String>,
-    ) -> impl Future<Output = TorErr<ElinkUserInfo>>;
+    ) -> impl Future<Output = TorErr<Message<ElinkUserInfoData>>>;
     fn webvpn_get_tree_with_service(
         &self,
         user_id: impl Into<String>,
-    ) -> impl Future<Output = TorErr<ElinkServiceInfo>>;
+    ) -> impl Future<Output = TorErr<Message<ElinkServiceInfoData>>>;
     fn webvpn_get_service_by_user(
         &self,
         user_id: impl Into<String>,
-    ) -> impl Future<Output = TorErr<ElinkUserServiceInfo>>;
+    ) -> impl Future<Output = TorErr<Message<Vec<ElinkServiceData>>>>;
     fn webvpn_get_visit_service_by_user(
         &self,
         user_id: impl Into<String>,
-    ) -> impl Future<Output = TorErr<ElinkUserServiceInfo>>;
+    ) -> impl Future<Output = TorErr<Message<Vec<ElinkServiceData>>>>;
     fn webvpn_get_proxy_service(
         &self,
         user_id: impl Into<String>,
@@ -40,7 +40,10 @@ pub trait WebVPNService {
 }
 
 impl<C: Client> WebVPNService for C {
-    async fn webvpn_get_user_info(&self, user_id: impl Into<String>) -> TorErr<ElinkUserInfo> {
+    async fn webvpn_get_user_info(
+        &self,
+        user_id: impl Into<String>,
+    ) -> TorErr<Message<ElinkUserInfoData>> {
         if let Ok(response) = self
             .reqwest_client()
             .get(format!(
@@ -53,7 +56,7 @@ impl<C: Client> WebVPNService for C {
             .await
         {
             if let Ok(json) = response.text().await {
-                return Ok(serde_json::from_str(json.as_str()).unwrap());
+                return Ok(serde_json::from_str(json.as_str())?);
             }
         }
         Err(tokio::io::Error::new(
@@ -65,7 +68,7 @@ impl<C: Client> WebVPNService for C {
     async fn webvpn_get_tree_with_service(
         &self,
         user_id: impl Into<String>,
-    ) -> TorErr<ElinkServiceInfo> {
+    ) -> TorErr<Message<ElinkServiceInfoData>> {
         let mut body = HashMap::new();
         body.insert("nameLike", "".to_string());
         body.insert("serviceNameLike", "".to_string());
@@ -85,7 +88,7 @@ impl<C: Client> WebVPNService for C {
             .await
         {
             if let Ok(json) = response.text().await {
-                return Ok(serde_json::from_str(json.as_str()).unwrap());
+                return Ok(serde_json::from_str(json.as_str())?);
             }
         }
         Err(tokio::io::Error::new(
@@ -97,7 +100,7 @@ impl<C: Client> WebVPNService for C {
     async fn webvpn_get_service_by_user(
         &self,
         user_id: impl Into<String>,
-    ) -> TorErr<ElinkUserServiceInfo> {
+    ) -> TorErr<Message<Vec<ElinkServiceData>>> {
         let mut param = HashMap::new();
         param.insert("name", "");
         if let Ok(response) = self
@@ -115,7 +118,7 @@ impl<C: Client> WebVPNService for C {
             .await
         {
             if let Ok(json) = response.text().await {
-                return Ok(serde_json::from_str(json.as_str()).unwrap());
+                return Ok(serde_json::from_str(json.as_str())?);
             }
         }
         Err(tokio::io::Error::new(
@@ -127,7 +130,7 @@ impl<C: Client> WebVPNService for C {
     async fn webvpn_get_visit_service_by_user(
         &self,
         user_id: impl Into<String>,
-    ) -> TorErr<ElinkUserServiceInfo> {
+    ) -> TorErr<Message<Vec<ElinkServiceData>>> {
         let mut param = HashMap::new();
         param.insert("name", "");
         if let Ok(response) = self
@@ -144,7 +147,7 @@ impl<C: Client> WebVPNService for C {
             .await
         {
             if let Ok(json) = response.text().await {
-                return Ok(serde_json::from_str(json.as_str()).unwrap());
+                return Ok(serde_json::from_str(json.as_str())?);
             }
         }
         Err(tokio::io::Error::new(
@@ -176,7 +179,7 @@ impl<C: Client> WebVPNService for C {
             .await
         {
             if let Ok(json) = response.text().await {
-                return Ok(serde_json::from_str(json.as_str()).unwrap());
+                return Ok(serde_json::from_str(json.as_str())?);
             }
         }
         Err(tokio::io::Error::new(
@@ -184,4 +187,10 @@ impl<C: Client> WebVPNService for C {
             "Get Proxy Service failed",
         ))
     }
+}
+
+#[cfg(test)]
+mod test_vpn_service {
+    #[tokio::test]
+    async fn name() {}
 }

@@ -41,7 +41,7 @@ impl<C: Client + Clone + Send> SSOUniversalLogin for C {
                 {
                     let json =
                         String::from_utf8(BASE64_STANDARD.decode(cookie.value()).unwrap()).unwrap();
-                    let data: ElinkLoginInfo = serde_json::from_str(&json).unwrap();
+                    let data: ElinkLoginInfo = serde_json::from_str(&json)?;
 
                     Ok(Some(data))
                 } else {

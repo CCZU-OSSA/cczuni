@@ -2,9 +2,9 @@ use serde::Deserialize;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Message<T> {
-    pub code: Option<String>,
-    pub messages: Option<String>,
-    pub data: Option<T>,
+    pub code: String,
+    pub messages: String,
+    pub data: T,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -18,7 +18,7 @@ pub struct ElinkProxyData {
     pub spa_port: String,
     pub admin_port: String,
     // TODO May fill other data future
-    pub gateway_list: ElinkProxyGatewayList,
+    pub gateway_list: Vec<ElinkProxyGatewayList>,
 }
 #[derive(Deserialize, Debug, Clone)]
 pub struct ElinkProxyGatewayList {
@@ -28,71 +28,50 @@ pub struct ElinkProxyGatewayList {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ElinkGroupInfo {
-    pub name: Option<String>,
-    pub id: Option<String>,
-    pub description: Option<String>,
-    pub creator: Option<String>,
+    pub name: String,
+    pub id: String,
+    pub description: String,
+    pub creator: String,
     #[serde(rename = "createTime")]
-    pub createtime: Option<String>, // 格式: yyyy-MM-dd HH:mm:ss
-    pub updator: Option<String>,
+    pub createtime: String, // 格式: yyyy-MM-dd HH:mm:ss
+    pub updator: String,
     #[serde(rename = "authTypeId")]
-    pub auth_type_id: Option<String>,
-
+    pub auth_type_id: String,
     #[serde(rename = "updateTime")]
-    pub updatetime: Option<String>, // 格式: yyyy-MM-dd HH:mm:ss
+    pub updatetime: String, // 格式: yyyy-MM-dd HH:mm:ss
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ElinkUserInfoData {
-    pub username: Option<String>,
-    pub name: Option<String>,
-    pub id: Option<String>,
-    pub email: Option<String>,
-    pub mobile: Option<String>,
+    pub username: String,
+    pub name: String,
+    pub id: String,
+    pub email: String,
+    pub mobile: String,
     #[serde(rename = "userState")]
-    pub user_state: Option<String>,
+    pub user_state: String,
     #[serde(rename = "lastLoginTime")]
-    pub lastlogintime: Option<String>, // 格式: yyyy-MM-dd HH:mm:ss
+    pub lastlogintime: String, // 格式: yyyy-MM-dd HH:mm:ss
     #[serde(rename = "userGroups")]
-    pub user_groups: Option<Vec<ElinkGroupInfo>>,
-    pub creator: Option<String>,
+    pub user_groups: Vec<ElinkGroupInfo>,
+    pub creator: String,
     #[serde(rename = "createTime")]
-    pub createtime: Option<String>, // 格式: yyyy-MM-dd HH:mm:ss
-    pub updator: Option<String>,
+    pub createtime: String, // 格式: yyyy-MM-dd HH:mm:ss
+    pub updator: String,
     #[serde(rename = "updateTime")]
-    pub updatetime: Option<String>, // 格式: yyyy-MM-dd HH:mm:ss
+    pub updatetime: String, // 格式: yyyy-MM-dd HH:mm:ss
     #[serde(rename = "dingNickName")]
-    pub ding_nick_name: Option<String>,
+    pub ding_nick_name: String,
     #[serde(rename = "qyWeChatUserId")]
-    pub qy_we_chat_user_id: Option<String>,
+    pub qy_we_chat_user_id: String,
     #[serde(rename = "weChatNickName")]
-    pub we_chat_nick_name: Option<String>,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct ElinkUserInfo {
-    pub code: Option<String>,
-    pub messages: Option<String>,
-    pub data: Option<ElinkUserInfoData>,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct ElinkServiceInfo {
-    pub code: Option<String>,
-    pub messages: Option<String>,
-    pub data: Option<ElinkServiceInfoData>,
-}
-#[derive(Deserialize, Debug, Clone)]
-pub struct ElinkUserServiceInfo {
-    pub code: Option<String>,
-    pub messages: Option<String>,
-    pub data: Option<Vec<ElinkServiceData>>,
+    pub we_chat_nick_name: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ElinkServiceInfoData {
-    pub title: Option<String>,
-    pub key: Option<String>,
+    pub title: String,
+    pub key: String,
     pub children: Option<Vec<ElinkServiceInfoData>>,
     #[serde(rename = "serviceList")]
     pub service_list: Option<Vec<ElinkServiceData>>,
@@ -102,37 +81,37 @@ pub struct ElinkServiceInfoData {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ElinkServiceGatewayData {
-    pub id: Option<String>,
-    pub name: Option<String>,
+    pub id: String,
+    pub name: String,
     #[serde(rename = "uniqueNo")]
-    pub unique_no: Option<String>,
-    pub server: Option<String>,
-    pub description: Option<String>,
+    pub unique_no: String,
+    pub server: String,
+    pub description: String,
     #[serde(rename = "type")]
-    pub type_of: Option<String>,
+    pub type_of: String,
     #[serde(rename = "adminAddr")]
-    pub admin_addr: Option<String>,
+    pub admin_addr: String,
     #[serde(rename = "nginxPort")]
-    pub nginx_port: Option<String>,
+    pub nginx_port: String,
     #[serde(rename = "connectState")]
-    pub connect_state: Option<String>,
+    pub connect_state: String,
     #[serde(rename = "publicServer")]
-    pub public_server: Option<String>,
+    pub public_server: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ElinkServiceData {
-    pub id: Option<String>,
-    pub name: Option<String>,
-    pub icon: Option<String>,
-    pub server: Option<String>,
-    pub description: Option<String>,
+    pub id: String,
+    pub name: String,
+    pub icon: String,
+    pub server: String,
+    pub description: String,
     #[serde(rename = "type")]
-    pub type_of: Option<String>,
+    pub type_of: String,
     #[serde(rename = "urlPlus")]
-    pub url_plus: Option<String>,
+    pub url_plus: String,
     #[serde(rename = "hostMd5")]
-    pub host_md5: Option<String>,
+    pub host_md5: String,
     #[serde(rename = "gatewayVo")]
     pub gateway_vo: Option<ElinkServiceGatewayData>,
 }
