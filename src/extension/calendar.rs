@@ -308,7 +308,7 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
                 let mut event = Event::new();
 
                 EVENT_PROP.iter().for_each(|(k, v)| {
-                    event.add_property(k, v);
+                    event.add_property(k.clone(), v.clone());
                 });
 
                 event
