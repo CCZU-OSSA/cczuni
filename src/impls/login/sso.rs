@@ -127,7 +127,6 @@ async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUn
             }
         }
         // connect `cczu` and don't need to redirect
-        // TODO: Remove the cookies Copy here may cause some problems, need debug
         if response.status() == StatusCode::OK {
             let dom = response.text().await.unwrap();
             let mut login_param = parse_hidden_values(dom.as_str());

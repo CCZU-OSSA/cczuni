@@ -39,7 +39,7 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
         let api = format!("{}/web_cas/web_cas_login_jwgl.aspx", self.root);
         recursion_redirect_handle(self.client.clone(), &api)
             .await
-            .unwrap();
+            .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error))?;
         Ok(())
     }
 
