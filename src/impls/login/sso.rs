@@ -9,7 +9,7 @@ use crate::{
     },
 };
 use base64::{prelude::BASE64_STANDARD, Engine};
-use reqwest::{cookie::Cookie, StatusCode, Url};
+use reqwest::{cookie::Cookie, Response, StatusCode, Url};
 use scraper::{Html, Selector};
 
 use super::sso_type::{ElinkLoginInfo, SSOLoginConnectType, SSOUniversalLoginInfo};
@@ -19,6 +19,11 @@ pub trait SSOUniversalLogin {
     ///
     /// You can only get the ElinkLoginInfo in WebVPN Mode...
     fn sso_universal_login(&self) -> impl Future<Output = TorErr<Option<ElinkLoginInfo>>>;
+
+    fn sso_service_login(
+        &self,
+        service: impl Into<String>,
+    ) -> impl Future<Output = TorErr<Response>>;
 }
 
 impl<C: Client + Clone + Send> SSOUniversalLogin for C {
@@ -62,6 +67,10 @@ impl<C: Client + Clone + Send> SSOUniversalLogin for C {
                 Ok(None)
             }
         }
+    }
+
+    async fn sso_service_login(&self, service: impl Into<String>) -> TorErr<Response> {
+        service_sso_login(self.clone(), service).await
     }
 }
 
@@ -149,6 +158,34 @@ async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUn
         }
     }
     Err(tokio::io::Error::new(ErrorKind::Other, "Login Failed"))
+}
+
+async fn service_sso_login(
+    client: impl Client + Clone + Send,
+    service: impl Into<String>,
+) -> TorErr<Response> {
+    let api = format!("{}?service={}", ROOT_SSO_LOGIN, service.into());
+    let response = client
+        .reqwest_client()
+        .get(api.clone())
+        .send()
+        .await
+        .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error.to_string()))?;
+    let dom = response.text().await.unwrap();
+    let mut login_param = parse_hidden_values(dom.as_str());
+    let account = client.account();
+    login_param.insert("username".into(), account.user);
+    login_param.insert("password".into(), BASE64_STANDARD.encode(account.password));
+
+    let response = client
+        .reqwest_client()
+        .post(api)
+        .form(&login_param)
+        .send()
+        .await
+        .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error.to_string()))?;
+
+    Ok(response)
 }
 
 pub fn parse_hidden_values(html: &str) -> HashMap<String, String> {
