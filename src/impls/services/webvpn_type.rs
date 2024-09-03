@@ -72,9 +72,9 @@ pub struct ElinkUserInfoData {
 pub struct ElinkServiceInfoData {
     pub title: String,
     pub key: String,
-    pub children: Option<Vec<ElinkServiceInfoData>>,
+    pub children: Vec<ElinkServiceInfoData>,
     #[serde(rename = "serviceList")]
-    pub service_list: Option<Vec<ElinkServiceData>>,
+    pub service_list: Vec<ElinkServiceData>,
     #[serde(rename = "serviceAllList")]
     pub service_all_list: Option<Vec<ElinkServiceData>>,
 }
@@ -109,9 +109,9 @@ pub struct ElinkServiceData {
     #[serde(rename = "type")]
     pub type_of: String,
     #[serde(rename = "urlPlus")]
-    pub url_plus: String,
+    pub url_plus: Option<String>,
     #[serde(rename = "hostMd5")]
-    pub host_md5: String,
+    pub host_md5: Option<String>,
     #[serde(rename = "gatewayVo")]
-    pub gateway_vo: Option<ElinkServiceGatewayData>,
+    pub gateway_vo: ElinkServiceGatewayData,
 }

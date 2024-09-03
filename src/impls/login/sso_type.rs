@@ -7,12 +7,12 @@ use crate::base::client::Property;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct ElinkLoginInfo {
-    pub username: Option<String>,
-    pub sid: Option<String>,
+    pub username: String,
+    pub sid: String,
     #[serde(rename = "userId")]
-    pub userid: Option<String>,
+    pub userid: String,
     #[serde(rename = "loginKey")]
-    pub loginkey: Option<String>,
+    pub loginkey: String,
 }
 
 #[derive(Debug, Clone)]

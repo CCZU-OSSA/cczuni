@@ -188,9 +188,3 @@ impl<C: Client> WebVPNService for C {
         ))
     }
 }
-
-#[cfg(test)]
-mod test_vpn_service {
-    #[tokio::test]
-    async fn name() {}
-}
