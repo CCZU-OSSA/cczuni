@@ -66,77 +66,81 @@ impl<C: Client + Clone + Send> SSOUniversalLogin for C {
 }
 
 async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUniversalLoginInfo> {
-    if let Ok(response) = client.reqwest_client().get(ROOT_SSO_LOGIN).send().await {
-        let status = response.status();
-        // FIXME Refactor
-        // use webvpn
-        if status == StatusCode::FOUND {
-            // redirect to webvpn root
-            // recursion to get the login page
+    let response = client
+        .reqwest_client()
+        .get(ROOT_SSO_LOGIN)
+        .send()
+        .await
+        .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error))?;
+    let status = response.status();
+    // use webvpn
+    if status == StatusCode::FOUND {
+        // redirect to webvpn root
+        // recursion to get the login page
+        let response = recursion_redirect_handle(
+            client.clone(),
+            response
+                .headers()
+                .get("location")
+                .unwrap()
+                .to_str()
+                .unwrap(),
+        )
+        .await
+        .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error))?;
 
-            if let Ok(response) = recursion_redirect_handle(
-                client.clone(),
-                response
-                    .headers()
-                    .get("location")
-                    .unwrap()
-                    .to_str()
-                    .unwrap(),
-            )
+        let url = response.url().clone();
+        let dom = response.text().await.unwrap();
+        let mut form = parse_hidden_values(dom.as_str());
+
+        let account = client.account();
+        form.insert("username".into(), account.user);
+        form.insert("password".into(), BASE64_STANDARD.encode(account.password));
+
+        let response = client
+            .reqwest_client()
+            .post(url)
+            .form(&form)
+            .send()
             .await
-            {
-                let url = response.url().clone();
-                let dom = response.text().await.unwrap();
-                let mut login_param = parse_hidden_values(dom.as_str());
+            .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error))?;
 
-                let account = client.account();
-                login_param.insert("username".into(), account.user);
-                login_param.insert("password".into(), BASE64_STANDARD.encode(account.password));
+        let redirect_location_header = response.headers().get("location");
+        if let None = redirect_location_header {
+            return Err(tokio::io::Error::new(
+                ErrorKind::NotFound,
+                "Redirect to None",
+            ));
+        }
+        let redirect_location = redirect_location_header.unwrap().to_str().unwrap();
 
-                if let Ok(response) = client
-                    .reqwest_client()
-                    .post(url)
-                    .form(&login_param)
-                    .send()
-                    .await
-                {
-                    let redirect_location_header = response.headers().get("location");
-                    if let None = redirect_location_header {
-                        return Err(tokio::io::Error::new(
-                            ErrorKind::NotFound,
-                            "Redirect to None",
-                        ));
-                    }
-                    let redirect_location = redirect_location_header.unwrap().to_str().unwrap();
-                    if let Ok(response) = client
-                        .reqwest_client()
-                        .get(redirect_location)
-                        .headers(DEFAULT_HEADERS.clone())
-                        .send()
-                        .await
-                    {
-                        client
-                            .cookies()
-                            .lock()
-                            .unwrap()
-                            .add_reqwest_cookies(response.cookies(), &ROOT_VPN_URL);
-                        return Ok(SSOUniversalLoginInfo {
-                            response,
-                            login_connect_type: SSOLoginConnectType::WEBVPN,
-                        });
-                    }
-                }
-            }
-        }
-        // connect `cczu` and don't need to redirect
-        else if status == StatusCode::OK {
-            return Ok(SSOUniversalLoginInfo {
-                response: service_sso_login(client, "").await?,
-                login_connect_type: SSOLoginConnectType::COMMON,
-            });
-        }
+        let response = client
+            .reqwest_client()
+            .get(redirect_location)
+            .headers(DEFAULT_HEADERS.clone())
+            .send()
+            .await
+            .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error))?;
+
+        client
+            .cookies()
+            .lock()
+            .unwrap()
+            .add_reqwest_cookies(response.cookies(), &ROOT_VPN_URL);
+        Ok(SSOUniversalLoginInfo {
+            response,
+            login_connect_type: SSOLoginConnectType::WEBVPN,
+        })
     }
-    Err(tokio::io::Error::new(ErrorKind::Other, "Login Failed"))
+    // connect `cczu` and don't need to redirect
+    else if status == StatusCode::OK {
+        Ok(SSOUniversalLoginInfo {
+            response: service_sso_login(client, "").await?,
+            login_connect_type: SSOLoginConnectType::COMMON,
+        })
+    } else {
+        Err(tokio::io::Error::new(ErrorKind::Other, "Login Failed"))
+    }
 }
 
 async fn service_sso_login(
