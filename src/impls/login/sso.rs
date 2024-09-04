@@ -4,12 +4,12 @@ use crate::{
     base::{client::Client, typing::TorErr},
     internals::{
         cookies_io::CookiesIOExt,
-        fields::{DEFAULT_HEADERS, ROOT_SSO, ROOT_SSO_LOGIN, ROOT_VPN_URL, ROOT_YWTB},
+        fields::{DEFAULT_HEADERS, ROOT_SSO_LOGIN, ROOT_VPN_URL},
         recursion::recursion_redirect_handle,
     },
 };
 use base64::{prelude::BASE64_STANDARD, Engine};
-use reqwest::{cookie::Cookie, Response, StatusCode, Url};
+use reqwest::{cookie::Cookie, header::LOCATION, Response, StatusCode};
 use scraper::{Html, Selector};
 
 use super::sso_type::{ElinkLoginInfo, SSOLoginConnectType, SSOUniversalLoginInfo};
@@ -28,15 +28,15 @@ pub trait SSOUniversalLogin {
 
 impl<C: Client + Clone + Send> SSOUniversalLogin for C {
     async fn sso_universal_login(&self) -> TorErr<Option<ElinkLoginInfo>> {
-        let login_info = universal_sso_login(self.clone()).await?;
+        let login = universal_sso_login(self.clone()).await?;
         self.properties().write().await.insert(
             SSOLoginConnectType::key(),
-            login_info.login_connect_type.clone().into(),
+            login.login_connect_type.clone().into(),
         );
 
-        match login_info.login_connect_type {
+        match login.login_connect_type {
             SSOLoginConnectType::WEBVPN => {
-                let response = login_info.response;
+                let response = login.response;
 
                 if let Some(cookie) = &response
                     .cookies()
@@ -56,16 +56,7 @@ impl<C: Client + Clone + Send> SSOUniversalLogin for C {
                     ))
                 }
             }
-            SSOLoginConnectType::COMMON => {
-                self.cookies().lock().unwrap().copy_cookies(
-                    &ROOT_SSO.parse::<Url>().unwrap(),
-                    &format!("{}/pc/index.html", ROOT_YWTB)
-                        .parse::<Url>()
-                        .unwrap(),
-                );
-
-                Ok(None)
-            }
+            SSOLoginConnectType::COMMON => Ok(None),
         }
     }
 
@@ -76,8 +67,10 @@ impl<C: Client + Clone + Send> SSOUniversalLogin for C {
 
 async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUniversalLoginInfo> {
     if let Ok(response) = client.reqwest_client().get(ROOT_SSO_LOGIN).send().await {
+        let status = response.status();
+        // FIXME Refactor
         // use webvpn
-        if response.status() == StatusCode::FOUND {
+        if status == StatusCode::FOUND {
             // redirect to webvpn root
             // recursion to get the login page
 
@@ -131,30 +124,16 @@ async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUn
                             response,
                             login_connect_type: SSOLoginConnectType::WEBVPN,
                         });
-                    };
-                };
+                    }
+                }
             }
         }
         // connect `cczu` and don't need to redirect
-        if response.status() == StatusCode::OK {
-            let dom = response.text().await.unwrap();
-            let mut login_param = parse_hidden_values(dom.as_str());
-            let account = client.account();
-            login_param.insert("username".into(), account.user);
-            login_param.insert("password".into(), BASE64_STANDARD.encode(account.password));
-
-            if let Ok(response) = client
-                .reqwest_client()
-                .post(ROOT_SSO_LOGIN)
-                .form(&login_param)
-                .send()
-                .await
-            {
-                return Ok(SSOUniversalLoginInfo {
-                    response,
-                    login_connect_type: SSOLoginConnectType::COMMON,
-                });
-            };
+        else if status == StatusCode::OK {
+            return Ok(SSOUniversalLoginInfo {
+                response: service_sso_login(client, "").await?,
+                login_connect_type: SSOLoginConnectType::COMMON,
+            });
         }
     }
     Err(tokio::io::Error::new(ErrorKind::Other, "Login Failed"))
@@ -171,6 +150,24 @@ async fn service_sso_login(
         .send()
         .await
         .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error.to_string()))?;
+
+    // Has Logined before
+    if response.status() == StatusCode::FOUND {
+        return Ok(recursion_redirect_handle(
+            client,
+            response
+                .headers()
+                .get(LOCATION)
+                .ok_or(tokio::io::Error::new(
+                    ErrorKind::Other,
+                    "Get Location Failed",
+                ))?
+                .to_str()
+                .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error.to_string()))?,
+        )
+        .await?);
+    }
+
     let dom = response.text().await.unwrap();
     let mut login_param = parse_hidden_values(dom.as_str());
     let account = client.account();
@@ -181,11 +178,28 @@ async fn service_sso_login(
         .reqwest_client()
         .post(api)
         .form(&login_param)
+        .headers(DEFAULT_HEADERS.clone())
         .send()
         .await
         .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error.to_string()))?;
 
-    Ok(response)
+    if response.status() == StatusCode::FOUND {
+        Ok(recursion_redirect_handle(
+            client,
+            response
+                .headers()
+                .get(LOCATION)
+                .ok_or(tokio::io::Error::new(
+                    ErrorKind::Other,
+                    "Get Location Failed",
+                ))?
+                .to_str()
+                .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error.to_string()))?,
+        )
+        .await?)
+    } else {
+        Ok(response)
+    }
 }
 
 pub fn parse_hidden_values(html: &str) -> HashMap<String, String> {

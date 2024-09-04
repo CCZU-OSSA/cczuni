@@ -1,12 +1,17 @@
-use crate::{base::client::Client, internals::fields::DEFAULT_HEADERS};
+use std::io::ErrorKind;
+
+use crate::{
+    base::{client::Client, typing::TorErr},
+    internals::fields::DEFAULT_HEADERS,
+};
 use async_recursion::async_recursion;
-use reqwest::{Response, StatusCode};
+use reqwest::{header::LOCATION, Response, StatusCode};
 
 #[async_recursion]
 pub async fn recursion_redirect_handle(
     client: impl Client + Clone + Send + 'async_recursion,
     url: &str,
-) -> Result<Response, String> {
+) -> TorErr<Response> {
     if let Ok(response) = client
         .reqwest_client()
         .get(url)
@@ -17,17 +22,15 @@ pub async fn recursion_redirect_handle(
         if response.status() == StatusCode::FOUND {
             return recursion_redirect_handle(
                 client,
-                response
-                    .headers()
-                    .get("location")
-                    .unwrap()
-                    .to_str()
-                    .unwrap(),
+                response.headers().get(LOCATION).unwrap().to_str().unwrap(),
             )
             .await;
         }
         return Ok(response);
     }
 
-    Err(format!("Can't get `{}`", url))
+    Err(tokio::io::Error::new(
+        ErrorKind::Other,
+        format!("Can't get `{}`", url),
+    ))
 }

@@ -65,7 +65,8 @@ mod test {
     #[tokio::test]
     async fn calendar() {
         let client = DefaultClient::default();
-        let app = client.visit::<JwqywxApplication<_>>().await;
+        client.sso_universal_login().await.unwrap();
+        let app = client.visit::<JwcasApplication<_>>().await;
         app.login().await.unwrap();
         println!(
             "{:?}",

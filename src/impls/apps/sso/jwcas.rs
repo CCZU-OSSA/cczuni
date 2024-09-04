@@ -12,6 +12,7 @@ use crate::internals::recursion::recursion_redirect_handle;
 
 use super::jwcas_type::GradeData;
 
+/// Call `sso_login` before using this application!
 pub struct JwcasApplication<C> {
     pub client: C,
     pub root: String,
