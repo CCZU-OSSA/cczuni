@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -23,6 +25,12 @@ pub struct ElinkProxyData {
 #[derive(Deserialize, Debug, Clone)]
 pub struct ElinkProxyGatewayList {
     pub dns: String,
+    #[serde(rename = "whiteList")]
+    pub white_list: Vec<String>,
+    #[serde(rename = "inIpList")]
+    pub in_ip_list: Vec<String>,
+    #[serde(rename = "inIpListByGatewayMap")]
+    pub in_ip_list_by_gateway_map: HashMap<String, Vec<String>>,
     // ...
 }
 
