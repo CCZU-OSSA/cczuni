@@ -24,6 +24,7 @@ pub struct ElinkProxyData {
 }
 #[derive(Deserialize, Debug, Clone)]
 pub struct ElinkProxyGatewayList {
+    pub id: String,
     pub dns: String,
     #[serde(rename = "whiteList")]
     pub white_list: Vec<String>,
