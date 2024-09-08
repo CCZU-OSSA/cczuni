@@ -1,7 +1,10 @@
-use std::{collections::HashMap, io::ErrorKind};
+use std::collections::HashMap;
 
 use crate::{
-    base::{client::Client, typing::TorErr},
+    base::{
+        client::Client,
+        typing::{other_error, TorErr},
+    },
     impls::login::sso_type::ElinkLoginInfo,
     internals::fields::{DEFAULT_HEADERS, ROOT_VPN},
 };
@@ -76,9 +79,6 @@ impl<C: Client> WebVPNLogin for C {
                 }
             }
         };
-        Err(tokio::io::Error::new(
-            ErrorKind::ConnectionAborted,
-            "普通登录失败，请检查账号密码是否错误...",
-        ))
+        Err(other_error("普通登录失败，请检查账号密码是否错误..."))
     }
 }

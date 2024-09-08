@@ -1,11 +1,11 @@
-use std::{future::Future, io::ErrorKind};
+use std::future::Future;
 
 use reqwest::StatusCode;
 
 use crate::{
     base::{
         client::Client,
-        typing::{convert_error, TorErr},
+        typing::{other_error, TorErr},
     },
     internals::fields::ROOT_SSO_LOGIN,
 };
@@ -73,13 +73,13 @@ impl<C: Client> SSOLoginStatus for C {
             .get(ROOT_SSO_LOGIN)
             .send()
             .await
-            .map_err(convert_error)?;
+            .map_err(other_error)?;
         let statuscode = response.status();
 
         match statuscode {
             StatusCode::OK => Ok(SSOLoginConnectType::COMMON),
             StatusCode::FOUND => Ok(SSOLoginConnectType::WEBVPN),
-            _ => Err(tokio::io::Error::new(ErrorKind::Other, "Status Code Error")),
+            _ => Err(other_error("Status Code Error")),
         }
     }
 

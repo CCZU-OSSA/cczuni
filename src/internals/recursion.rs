@@ -1,7 +1,8 @@
-use std::io::ErrorKind;
-
 use crate::{
-    base::{client::Client, typing::TorErr},
+    base::{
+        client::Client,
+        typing::{other_error, TorErr},
+    },
     internals::fields::DEFAULT_HEADERS,
 };
 use async_recursion::async_recursion;
@@ -29,8 +30,5 @@ pub async fn recursion_redirect_handle(
         return Ok(response);
     }
 
-    Err(tokio::io::Error::new(
-        ErrorKind::Other,
-        format!("Can't get `{}`", url),
-    ))
+    Err(other_error(format!("Can't get `{}`", url)))
 }

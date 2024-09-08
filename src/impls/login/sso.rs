@@ -1,9 +1,9 @@
-use std::{collections::HashMap, future::Future, io::ErrorKind};
+use std::{collections::HashMap, future::Future};
 
 use crate::{
     base::{
         client::Client,
-        typing::{convert_error, TorErr},
+        typing::{other_error, TorErr},
     },
     internals::{
         cookies_io::CookiesIOExt,
@@ -53,10 +53,7 @@ impl<C: Client + Clone + Send> SSOUniversalLogin for C {
 
                     Ok(Some(data))
                 } else {
-                    Err(tokio::io::Error::new(
-                        ErrorKind::Other,
-                        "Get `EnlinkLoginInfo` failed",
-                    ))
+                    Err(other_error("Get `EnlinkLoginInfo` failed"))
                 }
             }
             SSOLoginConnectType::COMMON => Ok(None),
@@ -74,7 +71,7 @@ async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUn
         .get(ROOT_SSO_LOGIN)
         .send()
         .await
-        .map_err(convert_error)?;
+        .map_err(other_error)?;
     let status = response.status();
     // use webvpn
     if status == StatusCode::FOUND {
@@ -90,7 +87,7 @@ async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUn
                 .unwrap(),
         )
         .await
-        .map_err(convert_error)?;
+        .map_err(other_error)?;
 
         let url = response.url().clone();
         let dom = response.text().await.unwrap();
@@ -106,14 +103,11 @@ async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUn
             .form(&form)
             .send()
             .await
-            .map_err(convert_error)?;
+            .map_err(other_error)?;
 
         let redirect_location_header = response.headers().get("location");
         if let None = redirect_location_header {
-            return Err(tokio::io::Error::new(
-                ErrorKind::NotFound,
-                "Redirect to None",
-            ));
+            return Err(other_error("Redirect to None"));
         }
         let redirect_location = redirect_location_header.unwrap().to_str().unwrap();
 
@@ -123,7 +117,7 @@ async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUn
             .headers(DEFAULT_HEADERS.clone())
             .send()
             .await
-            .map_err(convert_error)?;
+            .map_err(other_error)?;
 
         client
             .cookies()
@@ -142,7 +136,7 @@ async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUn
             login_connect_type: SSOLoginConnectType::COMMON,
         })
     } else {
-        Err(tokio::io::Error::new(ErrorKind::Other, "Login Failed"))
+        Err(other_error("Login Failed"))
     }
 }
 
@@ -156,7 +150,7 @@ async fn service_sso_login(
         .get(api.clone())
         .send()
         .await
-        .map_err(convert_error)?;
+        .map_err(other_error)?;
 
     // Has Logined before
     if response.status() == StatusCode::FOUND {
@@ -165,12 +159,9 @@ async fn service_sso_login(
             response
                 .headers()
                 .get(LOCATION)
-                .ok_or(tokio::io::Error::new(
-                    ErrorKind::Other,
-                    "Get Location Failed",
-                ))?
+                .ok_or(other_error("Get Location Failed"))?
                 .to_str()
-                .map_err(convert_error)?,
+                .map_err(other_error)?,
         )
         .await?);
     }
@@ -188,7 +179,7 @@ async fn service_sso_login(
         .headers(DEFAULT_HEADERS.clone())
         .send()
         .await
-        .map_err(convert_error)?;
+        .map_err(other_error)?;
 
     if response.status() == StatusCode::FOUND {
         Ok(recursion_redirect_handle(
@@ -196,12 +187,9 @@ async fn service_sso_login(
             response
                 .headers()
                 .get(LOCATION)
-                .ok_or(tokio::io::Error::new(
-                    ErrorKind::Other,
-                    "Get Location Failed",
-                ))?
+                .ok_or(other_error("Get Location Failed"))?
                 .to_str()
-                .map_err(convert_error)?,
+                .map_err(other_error)?,
         )
         .await?)
     } else {

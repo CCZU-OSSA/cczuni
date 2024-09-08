@@ -1,12 +1,11 @@
 use std::fmt::Display;
-use std::io::ErrorKind;
 
 use reqwest::StatusCode;
 use scraper::{ElementRef, Html, Selector};
 
 use crate::base::app::Application;
 use crate::base::client::Client;
-use crate::base::typing::{convert_error, EmptyOrErr, TorErr};
+use crate::base::typing::{other_error, EmptyOrErr, TorErr};
 use crate::impls::services::sso_redirect::SSORedirect;
 use crate::internals::recursion::recursion_redirect_handle;
 
@@ -40,7 +39,7 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
         let api = format!("{}/web_cas/web_cas_login_jwgl.aspx", self.root);
         recursion_redirect_handle(self.client.clone(), &api)
             .await
-            .map_err(convert_error)?;
+            .map_err(other_error)?;
         Ok(())
     }
 
@@ -61,10 +60,7 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
             }
         }
 
-        Err(tokio::io::Error::new(
-            ErrorKind::Other,
-            format!("Get {service} failed"),
-        ))
+        Err(other_error(format!("Get {service} failed")))
     }
 
     pub async fn get_gradeinfo_vec(&self) -> TorErr<Vec<GradeData>> {

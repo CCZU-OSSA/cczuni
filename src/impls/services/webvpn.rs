@@ -1,9 +1,12 @@
-use std::{collections::HashMap, future::Future, io::ErrorKind};
+use std::{collections::HashMap, future::Future};
 
 use reqwest::StatusCode;
 
 use crate::{
-    base::{client::Client, typing::TorErr},
+    base::{
+        client::Client,
+        typing::{other_error, TorErr},
+    },
     internals::fields::{DEFAULT_HEADERS, ROOT_SSO_LOGIN, ROOT_VPN},
 };
 
@@ -59,10 +62,7 @@ impl<C: Client> WebVPNService for C {
                 return Ok(serde_json::from_str(json.as_str())?);
             }
         }
-        Err(tokio::io::Error::new(
-            ErrorKind::Other,
-            "Get User Info failed",
-        ))
+        Err(other_error("Get User Info failed"))
     }
 
     async fn webvpn_get_tree_with_service(
@@ -91,10 +91,7 @@ impl<C: Client> WebVPNService for C {
                 return Ok(serde_json::from_str(json.as_str())?);
             }
         }
-        Err(tokio::io::Error::new(
-            ErrorKind::Other,
-            "Get Tree Service failed",
-        ))
+        Err(other_error("Get Tree Service failed"))
     }
 
     async fn webvpn_get_service_by_user(
@@ -121,10 +118,7 @@ impl<C: Client> WebVPNService for C {
                 return Ok(serde_json::from_str(json.as_str())?);
             }
         }
-        Err(tokio::io::Error::new(
-            ErrorKind::Other,
-            "Get User Service failed",
-        ))
+        Err(other_error("Get User Service failed"))
     }
 
     async fn webvpn_get_visit_service_by_user(
@@ -150,10 +144,7 @@ impl<C: Client> WebVPNService for C {
                 return Ok(serde_json::from_str(json.as_str())?);
             }
         }
-        Err(tokio::io::Error::new(
-            ErrorKind::Other,
-            "Get User Visit Service failed",
-        ))
+        Err(other_error("Get User Visit Service failed"))
     }
 
     /// Client Redirect Policy: [`reqwest::redirect::Policy::none()`]
@@ -182,9 +173,6 @@ impl<C: Client> WebVPNService for C {
                 return Ok(serde_json::from_str(json.as_str())?);
             }
         }
-        Err(tokio::io::Error::new(
-            ErrorKind::Other,
-            "Get Proxy Service failed",
-        ))
+        Err(other_error("Get Proxy Service failed"))
     }
 }

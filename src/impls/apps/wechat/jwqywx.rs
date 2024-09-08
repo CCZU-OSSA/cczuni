@@ -1,13 +1,13 @@
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, ORIGIN, REFERER};
 use serde_json::json;
-use std::{io::ErrorKind, sync::Arc};
+use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::{
     base::{
         app::Application,
         client::Client,
-        typing::{convert_error, TorErr},
+        typing::{other_error, TorErr},
     },
     internals::fields::{DEFAULT_HEADERS, WECHAT_APP_API},
 };
@@ -61,10 +61,7 @@ impl<C: Client> JwqywxApplication<C> {
                 return Ok(message);
             }
         }
-        Err(tokio::io::Error::new(
-            ErrorKind::Other,
-            "Jwqywx Login Failed",
-        ))
+        Err(other_error("Jwqywx Login Failed"))
     }
 
     async fn write_token(&self, token: String) {
@@ -93,9 +90,9 @@ impl<C: Client> JwqywxApplication<C> {
             .send()
             .await;
         if let Ok(response) = result {
-            return Ok(response.json().await.map_err(convert_error)?);
+            return Ok(response.json().await.map_err(other_error)?);
         }
-        Err(tokio::io::Error::new(ErrorKind::Other, "Request Failed"))
+        Err(other_error("Request Failed"))
     }
 
     pub async fn get_points(&self) -> TorErr<Message<StudentPoint>> {
@@ -110,9 +107,9 @@ impl<C: Client> JwqywxApplication<C> {
             .send()
             .await;
         if let Ok(response) = result {
-            return Ok(response.json().await.map_err(convert_error)?);
+            return Ok(response.json().await.map_err(other_error)?);
         }
-        Err(tokio::io::Error::new(ErrorKind::Other, "Request Failed"))
+        Err(other_error("Request Failed"))
     }
 
     pub async fn terms(&self) -> TorErr<Message<Term>> {
@@ -123,9 +120,9 @@ impl<C: Client> JwqywxApplication<C> {
             .send()
             .await;
         if let Ok(response) = result {
-            return Ok(response.json().await.map_err(convert_error)?);
+            return Ok(response.json().await.map_err(other_error)?);
         }
-        Err(tokio::io::Error::new(ErrorKind::Other, "Request Failed"))
+        Err(other_error("Request Failed"))
     }
 }
 

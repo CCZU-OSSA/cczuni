@@ -4,7 +4,7 @@ use crate::{
     base::{
         app::Application,
         client::Client,
-        typing::{convert_error, EmptyOrErr, TorErr},
+        typing::{other_error, EmptyOrErr, TorErr},
     },
     impls::login::sso::SSOUniversalLogin,
     internals::fields::DEFAULT_HEADERS,
@@ -45,10 +45,10 @@ impl<C: Client + Clone + Send + Sync> LabApplication<C> {
             .form(&params)
             .send()
             .await
-            .map_err(convert_error)?
+            .map_err(other_error)?
             .json()
             .await
-            .map_err(convert_error)?)
+            .map_err(other_error)?)
     }
 }
 

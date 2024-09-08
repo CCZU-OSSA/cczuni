@@ -4,6 +4,6 @@ pub type TorErr<T> = tokio::io::Result<T>;
 pub type EmptyOrErr = TorErr<()>;
 
 #[inline]
-pub fn convert_error(error: impl ToString) -> tokio::io::Error {
-    tokio::io::Error::new(ErrorKind::Other, error.to_string())
+pub fn other_error(error: impl Into<Box<dyn std::error::Error + Send + Sync>>) -> tokio::io::Error {
+    tokio::io::Error::new(ErrorKind::Other, error)
 }
