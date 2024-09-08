@@ -3,7 +3,10 @@ use std::{future::Future, io::ErrorKind};
 use reqwest::StatusCode;
 
 use crate::{
-    base::{client::Client, typing::TorErr},
+    base::{
+        client::Client,
+        typing::{convert_error, TorErr},
+    },
     internals::fields::ROOT_SSO_LOGIN,
 };
 
@@ -70,7 +73,7 @@ impl<C: Client> SSOLoginStatus for C {
             .get(ROOT_SSO_LOGIN)
             .send()
             .await
-            .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error.to_string()))?;
+            .map_err(convert_error)?;
         let statuscode = response.status();
 
         match statuscode {

@@ -6,7 +6,7 @@ use scraper::{ElementRef, Html, Selector};
 
 use crate::base::app::Application;
 use crate::base::client::Client;
-use crate::base::typing::{EmptyOrErr, TorErr};
+use crate::base::typing::{convert_error, EmptyOrErr, TorErr};
 use crate::impls::services::sso_redirect::SSORedirect;
 use crate::internals::recursion::recursion_redirect_handle;
 
@@ -40,7 +40,7 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
         let api = format!("{}/web_cas/web_cas_login_jwgl.aspx", self.root);
         recursion_redirect_handle(self.client.clone(), &api)
             .await
-            .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error))?;
+            .map_err(convert_error)?;
         Ok(())
     }
 

@@ -4,7 +4,11 @@ use std::{io::ErrorKind, sync::Arc};
 use tokio::sync::RwLock;
 
 use crate::{
-    base::{app::Application, client::Client, typing::TorErr},
+    base::{
+        app::Application,
+        client::Client,
+        typing::{convert_error, TorErr},
+    },
     internals::fields::{DEFAULT_HEADERS, WECHAT_APP_API},
 };
 
@@ -89,10 +93,7 @@ impl<C: Client> JwqywxApplication<C> {
             .send()
             .await;
         if let Ok(response) = result {
-            return Ok(response
-                .json()
-                .await
-                .map_err(|err| tokio::io::Error::new(ErrorKind::Other, err.to_string()))?);
+            return Ok(response.json().await.map_err(convert_error)?);
         }
         Err(tokio::io::Error::new(ErrorKind::Other, "Request Failed"))
     }
@@ -109,10 +110,7 @@ impl<C: Client> JwqywxApplication<C> {
             .send()
             .await;
         if let Ok(response) = result {
-            return Ok(response
-                .json()
-                .await
-                .map_err(|err| tokio::io::Error::new(ErrorKind::Other, err.to_string()))?);
+            return Ok(response.json().await.map_err(convert_error)?);
         }
         Err(tokio::io::Error::new(ErrorKind::Other, "Request Failed"))
     }
@@ -125,10 +123,7 @@ impl<C: Client> JwqywxApplication<C> {
             .send()
             .await;
         if let Ok(response) = result {
-            return Ok(response
-                .json()
-                .await
-                .map_err(|err| tokio::io::Error::new(ErrorKind::Other, err.to_string()))?);
+            return Ok(response.json().await.map_err(convert_error)?);
         }
         Err(tokio::io::Error::new(ErrorKind::Other, "Request Failed"))
     }

@@ -1,10 +1,10 @@
-use std::{collections::HashMap, io::ErrorKind};
+use std::collections::HashMap;
 
 use crate::{
     base::{
         app::Application,
         client::Client,
-        typing::{EmptyOrErr, TorErr},
+        typing::{convert_error, EmptyOrErr, TorErr},
     },
     impls::login::sso::SSOUniversalLogin,
     internals::fields::DEFAULT_HEADERS,
@@ -45,10 +45,10 @@ impl<C: Client + Clone + Send + Sync> LabApplication<C> {
             .form(&params)
             .send()
             .await
-            .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error.to_string()))?
+            .map_err(convert_error)?
             .json()
             .await
-            .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error.to_string()))?)
+            .map_err(convert_error)?)
     }
 }
 

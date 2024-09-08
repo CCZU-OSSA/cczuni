@@ -1,7 +1,10 @@
 use std::{collections::HashMap, future::Future, io::ErrorKind};
 
 use crate::{
-    base::{client::Client, typing::TorErr},
+    base::{
+        client::Client,
+        typing::{convert_error, TorErr},
+    },
     internals::{
         cookies_io::CookiesIOExt,
         fields::{DEFAULT_HEADERS, ROOT_SSO_LOGIN, ROOT_VPN_URL},
@@ -71,7 +74,7 @@ async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUn
         .get(ROOT_SSO_LOGIN)
         .send()
         .await
-        .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error))?;
+        .map_err(convert_error)?;
     let status = response.status();
     // use webvpn
     if status == StatusCode::FOUND {
@@ -87,7 +90,7 @@ async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUn
                 .unwrap(),
         )
         .await
-        .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error))?;
+        .map_err(convert_error)?;
 
         let url = response.url().clone();
         let dom = response.text().await.unwrap();
@@ -103,7 +106,7 @@ async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUn
             .form(&form)
             .send()
             .await
-            .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error))?;
+            .map_err(convert_error)?;
 
         let redirect_location_header = response.headers().get("location");
         if let None = redirect_location_header {
@@ -120,7 +123,7 @@ async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUn
             .headers(DEFAULT_HEADERS.clone())
             .send()
             .await
-            .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error))?;
+            .map_err(convert_error)?;
 
         client
             .cookies()
@@ -153,7 +156,7 @@ async fn service_sso_login(
         .get(api.clone())
         .send()
         .await
-        .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error.to_string()))?;
+        .map_err(convert_error)?;
 
     // Has Logined before
     if response.status() == StatusCode::FOUND {
@@ -167,7 +170,7 @@ async fn service_sso_login(
                     "Get Location Failed",
                 ))?
                 .to_str()
-                .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error.to_string()))?,
+                .map_err(convert_error)?,
         )
         .await?);
     }
@@ -185,7 +188,7 @@ async fn service_sso_login(
         .headers(DEFAULT_HEADERS.clone())
         .send()
         .await
-        .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error.to_string()))?;
+        .map_err(convert_error)?;
 
     if response.status() == StatusCode::FOUND {
         Ok(recursion_redirect_handle(
@@ -198,7 +201,7 @@ async fn service_sso_login(
                     "Get Location Failed",
                 ))?
                 .to_str()
-                .map_err(|error| tokio::io::Error::new(ErrorKind::Other, error.to_string()))?,
+                .map_err(convert_error)?,
         )
         .await?)
     } else {
