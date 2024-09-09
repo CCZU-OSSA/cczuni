@@ -95,32 +95,62 @@ fn extract_string(element: Option<&ElementRef>) -> String {
 
 #[cfg(feature = "calendar")]
 pub mod calendar {
+    use std::collections::HashMap;
+
     use scraper::{Html, Selector};
 
     use crate::base::client::Client;
-    use crate::base::typing::TorErr;
-    use crate::extension::calendar::{CalendarParser, RawCourse};
+    use crate::base::typing::{other_error, TorErr};
+    use crate::extension::calendar::{
+        row_matrix_to_classinfo, CalendarParser, ParsedCourse, RawCourse,
+    };
 
     use super::JwcasApplication;
-    //FIXME: Fix Teacher here
     impl<C: Client + Clone + Send> CalendarParser for JwcasApplication<C> {
-        async fn get_classinfo_week_matrix(&self) -> TorErr<Vec<Vec<RawCourse>>> {
+        async fn get_classinfo_week_matrix(&self) -> TorErr<Vec<ParsedCourse>> {
             let text = self.get_classlist_html().await?;
             let doc = Html::parse_document(&text);
-            let tb_dn_seletor = Selector::parse(r#"table[id="GVxkkb"]"#).unwrap();
 
-            let tb_dn_rowseletor = Selector::parse(r#"tr[class="dg1-item"]"#).unwrap();
-            let tb_dn_itemseletor = Selector::parse(r#"td"#).unwrap();
-            let tb_dn_itemseletor_with_font = Selector::parse(r#"td > font"#).unwrap();
+            // used to select teacher
+            let tb_up_rowseletor = Selector::parse(r#"table[id="GVxkall"]"#).unwrap();
+
+            // used to select course
+            let tb_dn_seletor: Selector = Selector::parse(r#"table[id="GVxkkb"]"#).unwrap();
+
+            let tb_dg1_itemseletor = Selector::parse(r#"tr[class="dg1-item"]"#).unwrap();
+            let tb_tdseletor = Selector::parse(r#"td"#).unwrap();
+            let tb_td_with_fontseletor = Selector::parse(r#"td > font"#).unwrap();
+            let mut teacher_map = HashMap::new();
+            doc.select(&tb_up_rowseletor)
+                .next()
+                .ok_or(other_error("Select Teacher Failed"))?
+                .select(&tb_dg1_itemseletor)
+                .for_each(|e| {
+                    let items: Vec<String> = e
+                        .select(&tb_td_with_fontseletor)
+                        .map(|item| item.inner_html().trim().to_string())
+                        .collect();
+                    if !items.is_empty() {
+                        teacher_map.insert(items[1].clone(), items[5].clone());
+
+                        return;
+                    }
+                    let items: Vec<String> = e
+                        .select(&tb_tdseletor)
+                        .map(|item| item.inner_html().trim().to_string())
+                        .collect();
+                    teacher_map.insert(items[1].clone(), items[5].clone());
+                });
+
             let row_matrix: Vec<Vec<RawCourse>> = doc
                 .select(&tb_dn_seletor)
                 .next()
-                .unwrap()
-                .select(&tb_dn_rowseletor)
+                .ok_or(other_error("Select Course Failed"))?
+                .select(&tb_dg1_itemseletor)
                 .map(|e| {
                     let mut items: Vec<RawCourse> = e
-                        .select(&tb_dn_itemseletor_with_font)
-                        .map(|item| RawCourse::new(item.inner_html(), "".into()))
+                        .select(&tb_td_with_fontseletor)
+                        .map(|item| RawCourse::new(item.inner_html(), String::new()))
                         .collect();
                     if !items.is_empty() {
                         items.remove(0);
@@ -129,15 +159,20 @@ pub mod calendar {
                     }
 
                     let mut items: Vec<RawCourse> = e
-                        .select(&tb_dn_itemseletor)
-                        .map(|item| RawCourse::new(item.inner_html(), "".into()))
+                        .select(&tb_tdseletor)
+                        .map(|item| RawCourse::new(item.inner_html(), String::new()))
                         .collect();
                     items.remove(0);
                     items
                 })
                 .collect();
+            let mut parsed = row_matrix_to_classinfo(row_matrix)?;
 
-            Ok(row_matrix)
+            parsed
+                .iter_mut()
+                .for_each(|course| course.teacher = teacher_map[&course.name].clone());
+
+            Ok(parsed)
         }
     }
 }

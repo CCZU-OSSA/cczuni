@@ -130,33 +130,33 @@ pub mod calendar {
     pub struct SerdeRowCourses {
         #[serde(rename = "xq")]
         pub term: String,
-        #[serde(default, rename = "kc1")]
+        #[serde(rename = "kc1")]
         pub course_0: String,
-        #[serde(default, rename = "skjs1")]
+        #[serde(rename = "skjs1")]
         pub tearcher_0: String,
-        #[serde(default, rename = "kc2")]
+        #[serde(rename = "kc2")]
         pub course_1: String,
-        #[serde(default, rename = "skjs2")]
+        #[serde(rename = "skjs2")]
         pub tearcher_1: String,
-        #[serde(default, rename = "kc3")]
+        #[serde(rename = "kc3")]
         pub course_2: String,
-        #[serde(default, rename = "skjs3")]
+        #[serde(rename = "skjs3")]
         pub tearcher_2: String,
-        #[serde(default, rename = "kc4")]
+        #[serde(rename = "kc4")]
         pub course_3: String,
-        #[serde(default, rename = "skjs4")]
+        #[serde(rename = "skjs4")]
         pub tearcher_3: String,
-        #[serde(default, rename = "kc5")]
+        #[serde(rename = "kc5")]
         pub course_4: String,
-        #[serde(default, rename = "skjs5")]
+        #[serde(rename = "skjs5")]
         pub tearcher_4: String,
-        #[serde(default, rename = "kc6")]
+        #[serde(rename = "kc6")]
         pub course_5: String,
-        #[serde(default, rename = "skjs6")]
+        #[serde(rename = "skjs6")]
         pub tearcher_5: String,
-        #[serde(default, rename = "kc7")]
+        #[serde(rename = "kc7")]
         pub course_6: String,
-        #[serde(default, rename = "skjs7")]
+        #[serde(rename = "skjs7")]
         pub tearcher_6: String,
     }
 

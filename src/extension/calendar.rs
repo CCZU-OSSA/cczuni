@@ -173,96 +173,6 @@ pub trait ApplicationCalendarExt {
         schedule: Schedule,
         reminder: Option<i32>,
     ) -> impl Future<Output = TorErr<Calendar>>;
-
-    fn row_matrix_to_classinfo(
-        &self,
-        row_matrix: Vec<Vec<RawCourse>>,
-    ) -> TorErr<Vec<ParsedCourse>> {
-        let mut column_matrix: Vec<Vec<RawCourse>> = vec![];
-        for i in 0..7 {
-            let mut column: Vec<RawCourse> = vec![];
-            for v in row_matrix.iter() {
-                if let Some(value) = v.get(i) {
-                    column.push(value.clone())
-                } else {
-                    return Err(other_error("Parse Classinfo error"));
-                }
-            }
-            column_matrix.push(column);
-        }
-
-        let mut course_info: HashMap<String, ParsedCourse> = HashMap::new();
-        for (day, course_day) in column_matrix.iter().enumerate() {
-            for (time, courses_vec) in course_day.iter().enumerate() {
-                // Course A / Course B / Course C
-                let courses: Vec<String> = courses_vec
-                    .course
-                    .split("/")
-                    .filter(|v| !v.trim().is_empty())
-                    .map(|v| v.trim().to_string())
-                    .collect();
-                for course in courses {
-                    if course == "&nbsp;" || course.is_empty() {
-                        continue;
-                    }
-
-                    let id = Uuid::new_v3(
-                        &Uuid::NAMESPACE_DNS,
-                        format!("{}{}", course, day).as_bytes(),
-                    )
-                    .to_string();
-
-                    let chucks: Vec<String> = course
-                        .split(" ")
-                        .filter(|c| !c.is_empty())
-                        .map(|e| e.trim().to_string())
-                        .collect();
-                    let name = chucks[0].clone();
-                    let place = chucks[1].clone();
-                    let oe: String;
-                    let week: String;
-
-                    // Name Place Time
-                    if chucks.len() == 3 {
-                        oe = String::new();
-                        week = chucks[2].clone();
-                    } else {
-                        // Name Place OE Time
-                        oe = chucks[2].clone();
-                        week = chucks[3].clone();
-                    }
-
-                    if !course_info.contains_key(&id) {
-                        let info = ParsedCourse::new(
-                            name,
-                            match oe.as_str() {
-                                "单" => OddOrEven::Odd,
-                                "双" => OddOrEven::Even,
-                                _ => OddOrEven::Each,
-                            },
-                            day + 1,
-                            week.split(",")
-                                .filter(|e| !e.is_empty())
-                                .map(|e| e.to_string())
-                                .collect(),
-                            vec![time + 1],
-                            place,
-                            String::new(),
-                        );
-                        course_info.insert(id, info);
-                    } else {
-                        course_info.get_mut(&id).unwrap().add_classtime(time + 1);
-                    }
-                }
-            }
-        }
-
-        Ok(course_info
-            .values()
-            .into_iter()
-            .map(|e| e.clone())
-            .collect())
-    }
 }
 
 pub trait CalendarParser {
@@ -270,14 +180,14 @@ pub trait CalendarParser {
     ///
     /// Each Vec<String> is in order.
 
-    fn get_classinfo_week_matrix(&self) -> impl Future<Output = TorErr<Vec<Vec<RawCourse>>>>;
+    fn get_classinfo_week_matrix(&self) -> impl Future<Output = TorErr<Vec<ParsedCourse>>>;
 }
 
 pub trait TermCalendarParser: CalendarParser {
     fn get_term_classinfo_week_matrix(
         &self,
         term: String,
-    ) -> impl Future<Output = TorErr<Vec<Vec<RawCourse>>>>;
+    ) -> impl Future<Output = TorErr<Vec<ParsedCourse>>>;
 }
 
 impl<P: CalendarParser> ApplicationCalendarExt for P {
@@ -383,11 +293,93 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
     ) -> TorErr<Calendar> {
         let classlist = self.get_classinfo_week_matrix().await?;
 
-        self.generate_icalendar_from_classlist(
-            self.row_matrix_to_classinfo(classlist).unwrap(),
-            firstmonday,
-            schedule,
-            reminder,
-        )
+        self.generate_icalendar_from_classlist(classlist, firstmonday, schedule, reminder)
     }
+}
+
+pub fn row_matrix_to_classinfo(row_matrix: Vec<Vec<RawCourse>>) -> TorErr<Vec<ParsedCourse>> {
+    let mut column_matrix: Vec<Vec<RawCourse>> = vec![];
+    for i in 0..7 {
+        let mut column: Vec<RawCourse> = vec![];
+        for v in row_matrix.iter() {
+            if let Some(value) = v.get(i) {
+                column.push(value.clone())
+            } else {
+                return Err(other_error("Parse Classinfo error"));
+            }
+        }
+        column_matrix.push(column);
+    }
+
+    let mut course_info: HashMap<String, ParsedCourse> = HashMap::new();
+    for (day, course_day) in column_matrix.iter().enumerate() {
+        for (time, raw_course) in course_day.iter().enumerate() {
+            // Course A / Course B / Course C
+            let courses: Vec<String> = raw_course
+                .course
+                .split("/")
+                .filter(|v| !v.trim().is_empty())
+                .map(|v| v.trim().to_string())
+                .collect();
+            for course in courses {
+                if course == "&nbsp;" || course.is_empty() {
+                    continue;
+                }
+
+                let id = Uuid::new_v3(
+                    &Uuid::NAMESPACE_DNS,
+                    format!("{}{}", course, day).as_bytes(),
+                )
+                .to_string();
+
+                let chucks: Vec<String> = course
+                    .split(" ")
+                    .filter(|c| !c.is_empty())
+                    .map(|e| e.trim().to_string())
+                    .collect();
+                let name = chucks[0].clone();
+                let place = chucks[1].clone();
+                let oe: String;
+                let week: String;
+
+                // Name Place Time
+                if chucks.len() == 3 {
+                    oe = String::new();
+                    week = chucks[2].clone();
+                } else {
+                    // Name Place OE Time
+                    oe = chucks[2].clone();
+                    week = chucks[3].clone();
+                }
+
+                if !course_info.contains_key(&id) {
+                    let info = ParsedCourse::new(
+                        name,
+                        match oe.as_str() {
+                            "单" => OddOrEven::Odd,
+                            "双" => OddOrEven::Even,
+                            _ => OddOrEven::Each,
+                        },
+                        day + 1,
+                        week.split(",")
+                            .filter(|e| !e.is_empty())
+                            .map(|e| e.to_string())
+                            .collect(),
+                        vec![time + 1],
+                        place,
+                        raw_course.teacher.clone(),
+                    );
+                    course_info.insert(id, info);
+                } else {
+                    course_info.get_mut(&id).unwrap().add_classtime(time + 1);
+                }
+            }
+        }
+    }
+
+    Ok(course_info
+        .values()
+        .into_iter()
+        .map(|e| e.clone())
+        .collect())
 }

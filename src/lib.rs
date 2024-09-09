@@ -67,7 +67,7 @@ mod test {
     async fn calendar() {
         let client = DefaultClient::default();
         let app = client.visit::<JwqywxApplication<_>>().await;
-        app.login().await.unwrap();
-        app.get_classinfo_week_matrix().await.unwrap();
+        println!("{:?}", app.login().await.unwrap());
+        println!("{:?}", app.get_classinfo_week_matrix().await.unwrap());
     }
 }
