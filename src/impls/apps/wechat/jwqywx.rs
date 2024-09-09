@@ -128,12 +128,13 @@ impl<C: Client> JwqywxApplication<C> {
 
 #[cfg(feature = "calendar")]
 pub mod calendar {
-    use std::io::ErrorKind;
-
     use serde_json::json;
 
     use crate::{
-        base::{client::Client, typing::TorErr},
+        base::{
+            client::Client,
+            typing::{other_error, TorErr},
+        },
         extension::calendar::{
             row_matrix_to_classinfo, CalendarParser, ParsedCourse, TermCalendarParser,
         },
@@ -162,10 +163,7 @@ pub mod calendar {
                     data.message.into_iter().map(|e| e.into()).collect(),
                 )?);
             }
-            Err(tokio::io::Error::new(
-                ErrorKind::Other,
-                "Get Class Info failed",
-            ))
+            Err(other_error("Get Class Info failed"))
         }
     }
 

@@ -242,6 +242,7 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
                     .summary(&info.name) // Name
                     .location(&info.classroom) // Location
                     .description(&info.teacher) // Teacher
+                    .add_property("WEEK", info.week.join(","))
                     .timestamp(create_time)
                     .uid(&uid)
                     .starts(start)
