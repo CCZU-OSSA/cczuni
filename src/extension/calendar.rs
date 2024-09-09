@@ -53,7 +53,19 @@ pub enum OddOrEven {
 }
 
 #[derive(Clone, Debug)]
-pub struct ClassInfo {
+pub struct RawCourse {
+    pub course: String,
+    pub teacher: String,
+}
+
+impl RawCourse {
+    pub fn new(course: String, teacher: String) -> Self {
+        Self { course, teacher }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ParsedCourse {
     pub name: String,
     pub odd_or_even: OddOrEven,
     pub day: usize,
@@ -61,9 +73,10 @@ pub struct ClassInfo {
     pub classtime: Vec<usize>,
     pub classroom: String,
     pub daylist: Vec<String>,
+    pub teacher: String,
 }
 
-impl ClassInfo {
+impl ParsedCourse {
     pub fn new(
         name: String,
         oe: OddOrEven,
@@ -71,6 +84,7 @@ impl ClassInfo {
         week: Vec<String>,
         classtime: Vec<usize>,
         classroom: String,
+        teacher: String,
     ) -> Self {
         Self {
             name,
@@ -79,6 +93,7 @@ impl ClassInfo {
             week,
             classtime,
             classroom,
+            teacher,
             daylist: vec![],
         }
     }
@@ -91,7 +106,7 @@ impl ClassInfo {
         self.week.push(value)
     }
 
-    pub fn merge(&mut self, rhs: &ClassInfo) -> &mut Self {
+    pub fn merge(&mut self, rhs: &ParsedCourse) -> &mut Self {
         rhs.week.iter().for_each(|v| {
             if !self.week.contains(v) {
                 self.add_week(v.clone());
@@ -147,7 +162,7 @@ impl ClassInfo {
 pub trait ApplicationCalendarExt {
     fn generate_icalendar_from_classlist(
         &self,
-        classlist: Vec<ClassInfo>,
+        classlist: Vec<ParsedCourse>,
         firstweekdate: String,
         schedule: Schedule,
         reminder: Option<i32>,
@@ -159,25 +174,29 @@ pub trait ApplicationCalendarExt {
         reminder: Option<i32>,
     ) -> impl Future<Output = TorErr<Calendar>>;
 
-    fn row_matrix_to_classinfo(&self, row_matrix: Vec<Vec<String>>) -> TorErr<Vec<ClassInfo>> {
-        let mut column_matrix: Vec<Vec<String>> = vec![];
+    fn row_matrix_to_classinfo(
+        &self,
+        row_matrix: Vec<Vec<RawCourse>>,
+    ) -> TorErr<Vec<ParsedCourse>> {
+        let mut column_matrix: Vec<Vec<RawCourse>> = vec![];
         for i in 0..7 {
-            let mut tmp: Vec<String> = vec![];
+            let mut column: Vec<RawCourse> = vec![];
             for v in row_matrix.iter() {
                 if let Some(value) = v.get(i) {
-                    tmp.push(value.clone())
+                    column.push(value.clone())
                 } else {
                     return Err(other_error("Parse Classinfo error"));
                 }
             }
-            column_matrix.push(tmp.clone());
+            column_matrix.push(column);
         }
 
-        let mut course_info: HashMap<String, ClassInfo> = HashMap::new();
+        let mut course_info: HashMap<String, ParsedCourse> = HashMap::new();
         for (day, course_day) in column_matrix.iter().enumerate() {
             for (time, courses_vec) in course_day.iter().enumerate() {
                 // Course A / Course B / Course C
                 let courses: Vec<String> = courses_vec
+                    .course
                     .split("/")
                     .filter(|v| !v.trim().is_empty())
                     .map(|v| v.trim().to_string())
@@ -214,7 +233,7 @@ pub trait ApplicationCalendarExt {
                     }
 
                     if !course_info.contains_key(&id) {
-                        let info = ClassInfo::new(
+                        let info = ParsedCourse::new(
                             name,
                             match oe.as_str() {
                                 "单" => OddOrEven::Odd,
@@ -228,6 +247,7 @@ pub trait ApplicationCalendarExt {
                                 .collect(),
                             vec![time + 1],
                             place,
+                            String::new(),
                         );
                         course_info.insert(id, info);
                     } else {
@@ -250,20 +270,20 @@ pub trait CalendarParser {
     ///
     /// Each Vec<String> is in order.
 
-    fn get_classinfo_week_matrix(&self) -> impl Future<Output = TorErr<Vec<Vec<String>>>>;
+    fn get_classinfo_week_matrix(&self) -> impl Future<Output = TorErr<Vec<Vec<RawCourse>>>>;
 }
 
 pub trait TermCalendarParser: CalendarParser {
     fn get_term_classinfo_week_matrix(
         &self,
         term: String,
-    ) -> impl Future<Output = TorErr<Vec<Vec<String>>>>;
+    ) -> impl Future<Output = TorErr<Vec<Vec<RawCourse>>>>;
 }
 
 impl<P: CalendarParser> ApplicationCalendarExt for P {
     fn generate_icalendar_from_classlist(
         &self,
-        classlist: Vec<ClassInfo>,
+        classlist: Vec<ParsedCourse>,
         firstweekdate: String,
         schedule: Schedule,
         reminder: Option<i32>,
@@ -309,8 +329,9 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
                 });
 
                 event
-                    .summary(&info.name)
-                    .location(&info.classroom)
+                    .summary(&info.name) // Name
+                    .location(&info.classroom) // Location
+                    .description(&info.teacher) // Teacher
                     .timestamp(create_time)
                     .uid(&uid)
                     .starts(start)

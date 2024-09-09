@@ -16,7 +16,7 @@ mod test {
             app::{AppVisitor, Application},
             client::Client,
         },
-        extension::calendar::{ApplicationCalendarExt, CalendarParser},
+        extension::calendar::CalendarParser,
         impls::{
             apps::{sso::jwcas::JwcasApplication, wechat::jwqywx::JwqywxApplication},
             client::DefaultClient,
@@ -24,6 +24,7 @@ mod test {
         },
         internals::recursion::recursion_redirect_handle,
     };
+
     #[tokio::test]
     async fn spawn_test() {
         struct Foo<C> {
@@ -65,12 +66,8 @@ mod test {
     #[tokio::test]
     async fn calendar() {
         let client = DefaultClient::default();
-        client.sso_universal_login().await.unwrap();
-        let app = client.visit::<JwcasApplication<_>>().await;
+        let app = client.visit::<JwqywxApplication<_>>().await;
         app.login().await.unwrap();
-        println!(
-            "{:?}",
-            app.row_matrix_to_classinfo(app.get_classinfo_week_matrix().await.unwrap())
-        );
+        app.get_classinfo_week_matrix().await.unwrap();
     }
 }

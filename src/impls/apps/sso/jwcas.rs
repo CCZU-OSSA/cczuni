@@ -99,11 +99,12 @@ pub mod calendar {
 
     use crate::base::client::Client;
     use crate::base::typing::TorErr;
-    use crate::extension::calendar::CalendarParser;
+    use crate::extension::calendar::{CalendarParser, RawCourse};
 
     use super::JwcasApplication;
+    //FIXME: Fix Teacher here
     impl<C: Client + Clone + Send> CalendarParser for JwcasApplication<C> {
-        async fn get_classinfo_week_matrix(&self) -> TorErr<Vec<Vec<String>>> {
+        async fn get_classinfo_week_matrix(&self) -> TorErr<Vec<Vec<RawCourse>>> {
             let text = self.get_classlist_html().await?;
             let doc = Html::parse_document(&text);
             let tb_dn_seletor = Selector::parse(r#"table[id="GVxkkb"]"#).unwrap();
@@ -111,15 +112,15 @@ pub mod calendar {
             let tb_dn_rowseletor = Selector::parse(r#"tr[class="dg1-item"]"#).unwrap();
             let tb_dn_itemseletor = Selector::parse(r#"td"#).unwrap();
             let tb_dn_itemseletor_with_font = Selector::parse(r#"td > font"#).unwrap();
-            let row_matrix: Vec<Vec<String>> = doc
+            let row_matrix: Vec<Vec<RawCourse>> = doc
                 .select(&tb_dn_seletor)
                 .next()
                 .unwrap()
                 .select(&tb_dn_rowseletor)
                 .map(|e| {
-                    let mut items: Vec<String> = e
+                    let mut items: Vec<RawCourse> = e
                         .select(&tb_dn_itemseletor_with_font)
-                        .map(|item| item.inner_html())
+                        .map(|item| RawCourse::new(item.inner_html(), "".into()))
                         .collect();
                     if !items.is_empty() {
                         items.remove(0);
@@ -127,9 +128,9 @@ pub mod calendar {
                         return items;
                     }
 
-                    let mut items: Vec<String> = e
+                    let mut items: Vec<RawCourse> = e
                         .select(&tb_dn_itemseletor)
-                        .map(|item| item.inner_html())
+                        .map(|item| RawCourse::new(item.inner_html(), "".into()))
                         .collect();
                     items.remove(0);
                     items
