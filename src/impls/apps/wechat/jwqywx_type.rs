@@ -140,13 +140,13 @@ pub mod calendar {
 
     impl Into<Vec<RawCourse>> for SerdeRowCourses {
         fn into(self) -> Vec<RawCourse> {
-            let courses = self.fields.iter().filter_map(|(key, value)| {
-                if key.len() == 3 && key.starts_with("kc") {
-                    if let Value::String(course) = value {
-                        return Some(course.clone());
-                    }
+            let courses = (1..=7).map(|index| {
+                let value = self.fields.get(&format!("kc{index}"));
+                if let Some(Value::String(course)) = value {
+                    return course.clone();
                 }
-                None
+
+                String::new()
             });
 
             let mut teachers = HashMap::new();
