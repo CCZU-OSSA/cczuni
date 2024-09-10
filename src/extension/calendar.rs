@@ -58,12 +58,6 @@ pub struct RawCourse {
     pub teacher: String,
 }
 
-impl RawCourse {
-    pub fn new(course: String, teacher: String) -> Self {
-        Self { course, teacher }
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct ParsedCourse {
     pub name: String,
@@ -180,14 +174,14 @@ pub trait CalendarParser {
     ///
     /// Each Vec<String> is in order.
 
-    fn get_classinfo_week_matrix(&self) -> impl Future<Output = TorErr<Vec<ParsedCourse>>>;
+    fn get_classinfo_week_matrix(&self) -> impl Future<Output = TorErr<Vec<Vec<RawCourse>>>>;
 }
 
 pub trait TermCalendarParser: CalendarParser {
     fn get_term_classinfo_week_matrix(
         &self,
         term: String,
-    ) -> impl Future<Output = TorErr<Vec<ParsedCourse>>>;
+    ) -> impl Future<Output = TorErr<Vec<Vec<RawCourse>>>>;
 }
 
 impl<P: CalendarParser> ApplicationCalendarExt for P {
@@ -294,11 +288,16 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
     ) -> TorErr<Calendar> {
         let classlist = self.get_classinfo_week_matrix().await?;
 
-        self.generate_icalendar_from_classlist(classlist, firstmonday, schedule, reminder)
+        self.generate_icalendar_from_classlist(
+            parse_week_matrix(classlist)?,
+            firstmonday,
+            schedule,
+            reminder,
+        )
     }
 }
 
-pub fn row_matrix_to_classinfo(row_matrix: Vec<Vec<RawCourse>>) -> TorErr<Vec<ParsedCourse>> {
+pub fn parse_week_matrix(row_matrix: Vec<Vec<RawCourse>>) -> TorErr<Vec<ParsedCourse>> {
     let mut column_matrix: Vec<Vec<RawCourse>> = vec![];
     for i in 0..7 {
         let mut column: Vec<RawCourse> = vec![];

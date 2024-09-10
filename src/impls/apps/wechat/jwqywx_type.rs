@@ -114,7 +114,10 @@ pub struct Term {
 
 #[cfg(feature = "calendar")]
 pub mod calendar {
+    use std::collections::HashMap;
+
     use serde::Deserialize;
+    use serde_json::Value;
 
     use crate::extension::calendar::RawCourse;
 
@@ -125,52 +128,55 @@ pub mod calendar {
     ///
     /// If you want the other fields, just create a new struct yourself.
     ///
-    /// There is no need to use a macros here, IMO, enumerate each field is better.
+    /// There is no need to use a proc-macros here, IMO, enumerate each field is better.
     #[derive(Debug, Deserialize, Clone)]
     pub struct SerdeRowCourses {
-        #[serde(rename = "xq")]
-        pub term: String,
-        #[serde(rename = "kc1")]
-        pub course_0: String,
-        #[serde(rename = "skjs1")]
-        pub tearcher_0: String,
-        #[serde(rename = "kc2")]
-        pub course_1: String,
-        #[serde(rename = "skjs2")]
-        pub tearcher_1: String,
-        #[serde(rename = "kc3")]
-        pub course_2: String,
-        #[serde(rename = "skjs3")]
-        pub tearcher_2: String,
-        #[serde(rename = "kc4")]
-        pub course_3: String,
-        #[serde(rename = "skjs4")]
-        pub tearcher_3: String,
-        #[serde(rename = "kc5")]
-        pub course_4: String,
-        #[serde(rename = "skjs5")]
-        pub tearcher_4: String,
-        #[serde(rename = "kc6")]
-        pub course_5: String,
-        #[serde(rename = "skjs6")]
-        pub tearcher_5: String,
-        #[serde(rename = "kc7")]
-        pub course_6: String,
-        #[serde(rename = "skjs7")]
-        pub tearcher_6: String,
+        #[serde(flatten)]
+        pub fields: HashMap<String, Value>,
     }
+
+    #[derive(Debug, Deserialize, Clone)]
+    pub struct SerdeTeacherCourses {}
 
     impl Into<Vec<RawCourse>> for SerdeRowCourses {
         fn into(self) -> Vec<RawCourse> {
-            vec![
-                RawCourse::new(self.course_0, self.tearcher_0),
-                RawCourse::new(self.course_1, self.tearcher_1),
-                RawCourse::new(self.course_2, self.tearcher_2),
-                RawCourse::new(self.course_3, self.tearcher_3),
-                RawCourse::new(self.course_4, self.tearcher_4),
-                RawCourse::new(self.course_5, self.tearcher_5),
-                RawCourse::new(self.course_6, self.tearcher_6),
-            ]
+            let courses = self.fields.iter().filter_map(|(key, value)| {
+                if key.len() == 3 && key.starts_with("kc") {
+                    if let Value::String(course) = value {
+                        return Some(course.clone());
+                    }
+                }
+                None
+            });
+
+            let mut teachers = HashMap::new();
+
+            for index in 1..=20 {
+                let name = self.fields.get(&format!("kcmc{index}"));
+                if let Some(Value::String(name)) = name {
+                    if let Some(Value::String(teacher)) = self.fields.get(&format!("skjs{index}")) {
+                        teachers.insert(name.clone(), teacher.clone());
+                    }
+                }
+            }
+
+            courses
+                .map(|course| {
+                    let teacher = teachers
+                        .get(
+                            course
+                                .split(" ")
+                                .collect::<Vec<&str>>()
+                                .first()
+                                .cloned()
+                                .unwrap_or(""),
+                        )
+                        .cloned()
+                        .unwrap_or(String::new());
+
+                    RawCourse { course, teacher }
+                })
+                .collect()
         }
     }
 }

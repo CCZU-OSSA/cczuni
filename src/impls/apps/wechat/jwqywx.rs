@@ -135,9 +135,7 @@ pub mod calendar {
             client::Client,
             typing::{other_error, TorErr},
         },
-        extension::calendar::{
-            row_matrix_to_classinfo, CalendarParser, ParsedCourse, TermCalendarParser,
-        },
+        extension::calendar::{CalendarParser, RawCourse, TermCalendarParser},
         impls::apps::wechat::jwqywx_type::{calendar::SerdeRowCourses, Message},
         internals::fields::WECHAT_APP_API,
     };
@@ -145,7 +143,10 @@ pub mod calendar {
     use super::JwqywxApplication;
 
     impl<C: Client> TermCalendarParser for JwqywxApplication<C> {
-        async fn get_term_classinfo_week_matrix(&self, term: String) -> TorErr<Vec<ParsedCourse>> {
+        async fn get_term_classinfo_week_matrix(
+            &self,
+            term: String,
+        ) -> TorErr<Vec<Vec<RawCourse>>> {
             let result = self
                 .client
                 .reqwest_client()
@@ -159,16 +160,14 @@ pub mod calendar {
                 .await;
             if let Ok(response) = result {
                 let data: Message<SerdeRowCourses> = response.json().await.unwrap();
-                return Ok(row_matrix_to_classinfo(
-                    data.message.into_iter().map(|e| e.into()).collect(),
-                )?);
+                return Ok(data.message.into_iter().map(|e| e.into()).collect());
             }
             Err(other_error("Get Class Info failed"))
         }
     }
 
     impl<C: Client> CalendarParser for JwqywxApplication<C> {
-        async fn get_classinfo_week_matrix(&self) -> TorErr<Vec<ParsedCourse>> {
+        async fn get_classinfo_week_matrix(&self) -> TorErr<Vec<Vec<RawCourse>>> {
             self.get_term_classinfo_week_matrix(
                 self.terms()
                     .await
