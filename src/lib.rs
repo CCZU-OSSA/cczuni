@@ -21,10 +21,17 @@ mod test {
             apps::{sso::jwcas::JwcasApplication, wechat::jwqywx::JwqywxApplication},
             client::DefaultClient,
             login::sso::SSOUniversalLogin,
+            services::webvpn::WebVPNService,
         },
         internals::recursion::recursion_redirect_handle,
     };
-
+    #[tokio::test]
+    async fn test_webvpn() {
+        let client = DefaultClient::default();
+        let info = client.sso_universal_login().await.unwrap().unwrap();
+        let data = client.webvpn_get_proxy_service(info.userid).await.unwrap();
+        println!("{:?}", data);
+    }
     #[tokio::test]
     async fn spawn_test() {
         struct Foo<C> {
