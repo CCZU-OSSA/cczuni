@@ -98,7 +98,7 @@ pub struct StudentPoint {
     pub total_grade_points: String,
     #[serde(rename = "zxf")]
     pub total_credits: String,
-    #[serde(rename = "pjcjfx")]
+    #[serde(rename = "pjcjxf")]
     pub average_credits: String,
     #[serde(rename = "pjxfjd")]
     pub average_grade_points: String,

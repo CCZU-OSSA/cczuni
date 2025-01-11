@@ -32,6 +32,7 @@ mod test {
         let data = client.webvpn_get_proxy_service(info.userid).await.unwrap();
         println!("{:?}", data);
     }
+
     #[tokio::test]
     async fn spawn_test() {
         struct Foo<C> {
@@ -76,5 +77,13 @@ mod test {
         let app = client.visit::<JwqywxApplication<_>>().await;
         println!("{:?}", app.login().await.unwrap());
         println!("{:?}", app.get_classinfo_week_matrix().await.unwrap());
+    }
+    #[tokio::test]
+    async fn test_jwqywx() {
+        let client = DefaultClient::default();
+        let app = client.visit::<JwqywxApplication<_>>().await;
+        app.login().await.unwrap();
+        let data = app.get_credits_and_rank().await;
+        println!("{data:?}");
     }
 }

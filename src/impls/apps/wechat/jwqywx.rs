@@ -95,7 +95,7 @@ impl<C: Client> JwqywxApplication<C> {
         Err(other_error("Request Failed"))
     }
 
-    pub async fn get_points(&self) -> TorErr<Message<StudentPoint>> {
+    pub async fn get_credits_and_rank(&self) -> TorErr<Message<StudentPoint>> {
         let result = self
             .client
             .reqwest_client()

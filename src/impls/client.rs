@@ -38,6 +38,10 @@ impl DefaultClient {
     pub fn account(user: impl Into<String>, password: impl Into<String>) -> Self {
         Self::new(Account::new(user, password))
     }
+
+    pub fn user(user: impl Into<String>) -> Self {
+        Self::new(Account::new(user, ""))
+    }
 }
 
 impl Client for DefaultClient {
