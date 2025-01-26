@@ -32,6 +32,7 @@ icalendar = { version = "0.16", optional = true }
 [features]
 vendored = ["reqwest/native-tls-vendored"]
 default-tls = ["reqwest/default-tls"]
+rustls-tls = ["reqwest/rustls-tls"]
 full = ["webvpn-login", "calendar", "internals", "vendored"]
 default = ["full"]
 webvpn-login = ["dep:aes", "dep:cbc", "dep:rand"]
