@@ -16,7 +16,7 @@ mod test {
             app::{AppVisitor, Application},
             client::Client,
         },
-        extension::calendar::CalendarParser,
+        extension::calendar::{parse_week_matrix, CalendarParser},
         impls::{
             apps::{sso::jwcas::JwcasApplication, wechat::jwqywx::JwqywxApplication},
             client::DefaultClient,
@@ -76,7 +76,9 @@ mod test {
         let client = DefaultClient::default();
         let app = client.visit::<JwqywxApplication<_>>().await;
         println!("{:?}", app.login().await.unwrap());
+        let matrix = app.get_classinfo_week_matrix().await.unwrap();
         println!("{:?}", app.get_classinfo_week_matrix().await.unwrap());
+        parse_week_matrix(matrix).unwrap();
     }
     #[tokio::test]
     async fn test_jwqywx() {

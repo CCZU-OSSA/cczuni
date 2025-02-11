@@ -338,7 +338,7 @@ pub fn parse_week_matrix(row_matrix: Vec<Vec<RawCourse>>) -> TorErr<Vec<ParsedCo
                     .map(|e| e.trim().to_string())
                     .collect();
                 let name = chucks[0].clone();
-                let place = chucks[1].clone();
+                let mut place = chucks[1].clone();
                 let oe: String;
                 let week: String;
 
@@ -346,6 +346,12 @@ pub fn parse_week_matrix(row_matrix: Vec<Vec<RawCourse>>) -> TorErr<Vec<ParsedCo
                 if chucks.len() == 3 {
                     oe = String::new();
                     week = chucks[2].clone();
+                } else if chucks.len() == 2 {
+                    // Can't promise to solve
+                    // Only adapt for `CourseName Week`
+                    place = String::new();
+                    oe = String::new();
+                    week = chucks[1].clone();
                 } else {
                     // Name Place OE Time
                     oe = chucks[2].clone();
