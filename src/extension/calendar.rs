@@ -321,7 +321,13 @@ pub fn parse_week_matrix(row_matrix: Vec<Vec<RawCourse>>) -> TorErr<Vec<ParsedCo
                 .filter(|v| !v.trim().is_empty())
                 .map(|v| v.trim().to_string())
                 .collect();
-            for course in courses {
+            let teachers: Vec<String> = raw_course
+                .teacher
+                .split(",/")
+                .filter(|v| !v.trim().is_empty())
+                .map(|v| v.trim().to_string())
+                .collect();
+            for (index, course) in courses.iter().enumerate() {
                 if course == "&nbsp;" || course.is_empty() {
                     continue;
                 }
@@ -373,7 +379,7 @@ pub fn parse_week_matrix(row_matrix: Vec<Vec<RawCourse>>) -> TorErr<Vec<ParsedCo
                             .collect(),
                         vec![time + 1],
                         place,
-                        raw_course.teacher.clone(),
+                        teachers[index].clone(),
                     );
                     course_info.insert(id, info);
                 } else {

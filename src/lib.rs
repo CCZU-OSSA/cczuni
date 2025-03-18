@@ -75,9 +75,8 @@ mod test {
     async fn calendar() {
         let client = DefaultClient::default();
         let app = client.visit::<JwqywxApplication<_>>().await;
-        println!("{:?}", app.login().await.unwrap());
+        app.login().await.unwrap();
         let matrix = app.get_classinfo_week_matrix().await.unwrap();
-        println!("{:?}", app.get_classinfo_week_matrix().await.unwrap());
         parse_week_matrix(matrix).unwrap();
     }
     #[tokio::test]
@@ -85,7 +84,7 @@ mod test {
         let client = DefaultClient::default();
         let app = client.visit::<JwqywxApplication<_>>().await;
         app.login().await.unwrap();
-        let data = app.get_credits_and_rank().await;
-        println!("{data:?}");
+        let matrix = app.get_classinfo_week_matrix().await.unwrap();
+        parse_week_matrix(matrix).unwrap();
     }
 }

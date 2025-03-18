@@ -135,9 +135,6 @@ pub mod calendar {
         pub fields: HashMap<String, Value>,
     }
 
-    #[derive(Debug, Deserialize, Clone)]
-    pub struct SerdeTeacherCourses {}
-
     impl Into<Vec<RawCourse>> for SerdeRowCourses {
         fn into(self) -> Vec<RawCourse> {
             let courses = (1..=7).map(|index| {
@@ -159,19 +156,29 @@ pub mod calendar {
                     }
                 }
             }
-
             courses
                 .map(|course| {
-                    let teacher = teachers
-                        .get(
-                            course
-                                .split(" ")
-                                .collect::<Vec<&str>>()
-                                .first()
+                    let teacher = course
+                        .split("/")
+                        .map(|single| {
+                            teachers
+                                .get(
+                                    single
+                                        .split(" ")
+                                        .collect::<Vec<&str>>()
+                                        .first()
+                                        .cloned()
+                                        .unwrap_or(""),
+                                )
                                 .cloned()
-                                .unwrap_or(""),
-                        )
-                        .cloned()
+                                .unwrap_or(String::new())
+                        })
+                        .reduce(|a, b| {
+                            if b.is_empty() {
+                                return a;
+                            }
+                            return format!("{},/{}", a, b);
+                        })
                         .unwrap_or(String::new());
 
                     RawCourse { course, teacher }
