@@ -85,6 +85,9 @@ mod test {
         let app = client.visit::<JwqywxApplication<_>>().await;
         app.login().await.unwrap();
         let matrix = app.get_classinfo_week_matrix().await.unwrap();
-        parse_week_matrix(matrix).unwrap();
+        for mut c in parse_week_matrix(matrix).unwrap() {
+            println!("{:?}", c);
+            println!("{:?}", c.with_startdate("20250620"));
+        }
     }
 }

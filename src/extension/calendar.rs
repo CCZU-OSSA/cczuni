@@ -337,17 +337,17 @@ pub fn parse_week_matrix(row_matrix: Vec<Vec<RawCourse>>) -> TorErr<Vec<ParsedCo
                     format!("{}{}", course, day).as_bytes(),
                 )
                 .to_string();
+                println!("{course:?}");
 
                 let chucks: Vec<String> = course
                     .split(" ")
                     .filter(|c| !c.is_empty())
                     .map(|e| e.trim().to_string())
                     .collect();
-                let name = chucks[0].clone();
+                let mut name = chucks[0].clone();
                 let mut place = chucks[1].clone();
                 let oe: String;
                 let week: String;
-
                 // Name Place Time
                 if chucks.len() == 3 {
                     oe = String::new();
@@ -358,6 +358,20 @@ pub fn parse_week_matrix(row_matrix: Vec<Vec<RawCourse>>) -> TorErr<Vec<ParsedCo
                     place = String::new();
                     oe = String::new();
                     week = chucks[1].clone();
+                } else if chucks.len() > 1 && chucks[1] == "A级" || chucks[1] == "B级" {
+                    // Name A/B级 Place OE Time
+                    // 大学英语2 A级 W2204 双 3-18,
+                    // 大学英语2 A级 W2204  3-18
+                    name = format!("{} {}", chucks[0], chucks[1]);
+                    if chucks.len() == 5 {
+                        place = chucks[2].clone();
+                        oe = chucks[3].clone();
+                        week = chucks[4].clone();
+                    } else {
+                        place = chucks[2].clone();
+                        oe = String::new();
+                        week = chucks[3].clone();
+                    }
                 } else {
                     // Name Place OE Time
                     oe = chucks[2].clone();
