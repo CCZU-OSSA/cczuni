@@ -27,10 +27,10 @@ impl<C: Client> WebVPNLogin for C {
         let account = self.account();
         let url = format!("{}/enlink/sso/login/submit", ROOT_VPN);
         const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let mut token = (0..16)
             .map(|_| {
-                let idx = rng.gen_range(0..CHARSET.len());
+                let idx = rng.random_range(0..CHARSET.len());
                 CHARSET[idx] as u8
             })
             .collect::<Vec<u8>>();
