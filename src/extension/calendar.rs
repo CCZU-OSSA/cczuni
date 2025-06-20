@@ -379,7 +379,7 @@ pub fn parse_week_matrix(row_matrix: Vec<Vec<RawCourse>>) -> TorErr<Vec<ParsedCo
                             .collect(),
                         vec![time + 1],
                         place,
-                        teachers[index].clone(),
+                        teachers.get(index).map(|e| e.clone()).unwrap_or("未知教师".to_owned()),
                     );
                     course_info.insert(id, info);
                 } else {
