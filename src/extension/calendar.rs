@@ -337,7 +337,6 @@ pub fn parse_week_matrix(row_matrix: Vec<Vec<RawCourse>>) -> TorErr<Vec<ParsedCo
                     format!("{}{}", course, day).as_bytes(),
                 )
                 .to_string();
-                println!("{course:?}");
 
                 let chucks: Vec<String> = course
                     .split(" ")
