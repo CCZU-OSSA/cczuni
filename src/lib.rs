@@ -6,6 +6,7 @@ pub mod internals;
 pub(crate) mod internals;
 
 pub mod extension;
+pub mod utils;
 
 #[cfg(feature = "full")]
 #[cfg(test)]
