@@ -33,7 +33,7 @@ pub async fn services_status_code() -> HashMap<&'static str, StatusCode> {
                 client
                     .request(Method::OPTIONS, url)
                     .headers(DEFAULT_HEADERS.clone())
-                    .timeout(Duration::from_secs(5))
+                    .timeout(Duration::from_secs(3))
                     //  .headers(DEFAULT_HEADERS.clone())
                     .send()
                     .await
