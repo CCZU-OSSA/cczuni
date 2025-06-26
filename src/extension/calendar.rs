@@ -17,14 +17,14 @@ pub static EVENT_PROP: LazyLock<HashMap<&'static str, &'static str>> = LazyLock:
     map
 });
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ScheduleElement {
     pub name: String,
     pub start_time: String,
     pub end_time: String,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Schedule {
     pub classtime: Vec<ScheduleElement>,
 }
@@ -42,6 +42,53 @@ impl Schedule {
 
     pub fn from_str(data: &str) -> Self {
         serde_json::from_str(data).unwrap()
+    }
+
+    pub fn copy_with(&self, element: ScheduleElement) -> Self {
+        let name = element.name.clone();
+        Schedule {
+            classtime: self
+                .classtime
+                .clone()
+                .into_iter()
+                .filter(|e| e.name != name)
+                .chain(std::iter::once(element))
+                .collect(),
+        }
+    }
+    pub fn copy_withs(&self, elements: Vec<ScheduleElement>) -> Self {
+        let data = elements.clone();
+        Schedule {
+            classtime: self
+                .classtime
+                .clone()
+                .into_iter()
+                .filter(|e| !elements.iter().any(|el| el.name == e.name))
+                .chain(data)
+                .collect(),
+        }
+    }
+
+    pub fn copy_with_mut(&mut self, element: ScheduleElement) {
+        let name = element.name.clone();
+        self.classtime = self
+            .classtime
+            .clone()
+            .into_iter()
+            .filter(|e| e.name != name)
+            .chain(std::iter::once(element))
+            .collect();
+    }
+
+    pub fn copy_withs_mut(&mut self, elements: Vec<ScheduleElement>) {
+        let data = elements.clone();
+        self.classtime = self
+            .classtime
+            .clone()
+            .into_iter()
+            .filter(|e| !elements.iter().any(|el| el.name == e.name))
+            .chain(data)
+            .collect();
     }
 }
 
