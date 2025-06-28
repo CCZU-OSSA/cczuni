@@ -60,12 +60,12 @@ pub struct CourseGrade {
     pub is_exam_type: i32,
     #[serde(rename = "ksxz")]
     pub exam_type: String,
-    #[serde(rename = "pscj")]
-    pub usual_grade: f32,
-    #[serde(rename = "qzcj")]
-    pub mid_exam_grade: f32,
-    #[serde(rename = "qmcj")]
-    pub end_exam_grade: f32,
+    //  #[serde(rename = "pscj")]
+    //  pub usual_grade: f32,
+    //  #[serde(rename = "qzcj")]
+    //  pub mid_exam_grade: f32,
+    //  #[serde(rename = "qmcj")]
+    //  pub end_exam_grade: f32,
     #[serde(rename = "kscj")]
     pub exam_grade: String,
     #[serde(rename = "idn")]

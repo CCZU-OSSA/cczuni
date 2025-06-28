@@ -91,4 +91,13 @@ mod test {
             println!("{:?}", c.with_startdate("20250620"));
         }
     }
+
+    #[tokio::test]
+    async fn test_grade() {
+        let client = DefaultClient::default();
+        let app = client.visit::<JwqywxApplication<_>>().await;
+        app.login().await.unwrap();
+        let grades = app.get_grades().await.unwrap();
+        println!("{:?}", grades);
+    }
 }
