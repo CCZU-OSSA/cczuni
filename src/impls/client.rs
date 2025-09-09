@@ -42,6 +42,10 @@ impl DefaultClient {
     pub fn user(user: impl Into<String>) -> Self {
         Self::new(Account::new(user, ""))
     }
+
+    pub fn iccard(card: impl Into<String>) -> Self {
+        Self::new(Account::new(card, ""))
+    }
 }
 
 impl Client for DefaultClient {
