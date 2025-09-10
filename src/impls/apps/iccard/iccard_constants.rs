@@ -7,7 +7,7 @@ use crate::impls::apps::iccard::iccard_type::DormArea;
 //     "areaname": "西太湖校区1-7,10-11",
 //     "aid": "0030000000002503",
 // },
-pub const PRSET_DORMBUILDINGS: [DormArea<&'static str>; 3] = [
+pub const PRESET_DORMBUILDINGS: [DormArea<&'static str>; 3] = [
     DormArea {
         name: "西太湖校区",
         id: "0030000000002501",

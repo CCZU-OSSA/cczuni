@@ -1,11 +1,16 @@
+use std::fmt::Display;
+
+use tokio::join;
+
 use crate::{
     base::{
         app::Application,
         client::Client,
         typing::{other_error, TorErr},
     },
-    impls::apps::iccard::iccard_type::{
-        DormArea, DormBuilding, DormBuildingsData, DormRoomElectricityBillData,
+    impls::apps::iccard::{
+        iccard_constants::PRESET_DORMBUILDINGS,
+        iccard_type::{DormArea, DormBuilding, DormBuildingsData, DormRoomElectricityBillData},
     },
     internals::fields::DEFAULT_HEADERS,
 };
@@ -24,9 +29,9 @@ impl<C: Client + Clone> Application<C> for ICCardApplication<C, &'static str> {
     }
 }
 
-impl<C: Client + Clone + Send> ICCardApplication<C, &'static str> {
+impl<C: Client + Clone, S: Display> ICCardApplication<C, S> {
     pub fn endpoint(&self, endpoint: &str) -> String {
-        format!("{}/{}", self.root, endpoint)
+        format!("{}/{}", &self.root, endpoint)
     }
     pub async fn query_electricity_bill(
         &self,
@@ -69,7 +74,7 @@ impl<C: Client + Clone + Send> ICCardApplication<C, &'static str> {
         Ok(response.json().await.map_err(other_error)?)
     }
 
-    pub async fn query_buildings(
+    pub async fn list_buildings(
         &self,
         area: DormArea<impl Into<String>>,
     ) -> TorErr<DormBuildingsData> {
@@ -96,35 +101,36 @@ impl<C: Client + Clone + Send> ICCardApplication<C, &'static str> {
             .map_err(other_error)?;
         Ok(response.json().await.map_err(other_error)?)
     }
+
+    pub async fn list_all_preset_buildings(&self) -> TorErr<Vec<DormBuildingsData>> {
+        let task = |index: usize| async move {
+            let area: DormArea<&'static str> = PRESET_DORMBUILDINGS[index].clone();
+
+            self.list_buildings(area.clone()).await
+        };
+
+        let result = join!(task(0), task(1), task(2));
+        let mut results = Vec::new();
+        for res in [result.0, result.1, result.2] {
+            results.push(res?);
+        }
+        Ok(results)
+    }
 }
 
 #[cfg(test)]
 mod ptest {
     use crate::{
         base::app::AppVisitor,
-        impls::{
-            apps::iccard::{iccard::ICCardApplication, iccard_constants::PRSET_DORMBUILDINGS},
-            client::DefaultClient,
-        },
+        impls::{apps::iccard::iccard::ICCardApplication, client::DefaultClient},
     };
 
     #[tokio::test]
     async fn test() {
-        let area = PRSET_DORMBUILDINGS[1].clone();
         let client = DefaultClient::iccard("1");
-        let app = client.visit::<ICCardApplication<_, _>>().await;
-        let buildings = &app.query_buildings(area.clone()).await.unwrap();
-        println!("{:?}", buildings.buildingtab.get(7).unwrap());
+        let app: ICCardApplication<DefaultClient, &'static str> =
+            client.visit::<ICCardApplication<_, _>>().await;
 
-        println!(
-            "{:?}",
-            app.query_electricity_bill(
-                area.clone(),
-                buildings.buildingtab.get(7).unwrap().clone(),
-                "",
-            )
-            .await
-            .unwrap()
-        );
+        println!("{:?}", app.list_all_preset_buildings().await.unwrap());
     }
 }
