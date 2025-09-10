@@ -5,7 +5,7 @@ use crate::{
         typing::{other_error, TorErr},
     },
     impls::apps::iccard::iccard_type::{
-        DormArea, DormBuilding, DormBuildingsArea, DormBuildingsData,
+        DormArea, DormBuilding, DormBuildingsData, DormRoomElectricityBillData,
     },
     internals::fields::DEFAULT_HEADERS,
 };
@@ -33,7 +33,7 @@ impl<C: Client + Clone + Send> ICCardApplication<C, &'static str> {
         area: DormArea<impl Into<String>>,
         building: DormBuilding,
         room: impl Into<String>,
-    ) -> TorErr<()> {
+    ) -> TorErr<DormRoomElectricityBillData> {
         let url = self.endpoint("wechat/callinterface/queryElecRoomInfo.html");
         let areaname = area.name.into();
         let areaid = area.id.into();
@@ -66,8 +66,7 @@ impl<C: Client + Clone + Send> ICCardApplication<C, &'static str> {
             .send()
             .await
             .map_err(other_error)?;
-        println!("{:?}", response.text().await.map_err(other_error)?);
-        Ok(())
+        Ok(response.json().await.map_err(other_error)?)
     }
 
     pub async fn query_buildings(
@@ -111,7 +110,7 @@ mod ptest {
 
     #[tokio::test]
     async fn test() {
-        let area = PRSET_DORMBUILDINGS[0].clone();
+        let area = PRSET_DORMBUILDINGS[1].clone();
         let client = DefaultClient::iccard("1");
         let app = client.visit::<ICCardApplication<_, _>>().await;
         let buildings = &app.query_buildings(area.clone()).await.unwrap();
