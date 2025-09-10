@@ -129,8 +129,7 @@ mod ptest {
     async fn test() {
         tokio::spawn(async {
             let client = DefaultClient::iccard("1");
-            let app =
-                client.visit::<ICCardApplication<_, _>>().await;
+            let app = client.visit::<ICCardApplication<_, _>>().await;
 
             println!("{:?}", app.list_all_preset_buildings().await.unwrap());
         });
