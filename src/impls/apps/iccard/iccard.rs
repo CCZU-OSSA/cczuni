@@ -20,11 +20,11 @@ pub struct ICCardApplication<C, S> {
     pub root: S,
 }
 
-impl<C: Client + Clone> Application<C> for ICCardApplication<C, &'static str> {
+impl<C: Client + Clone> Application<C> for ICCardApplication<C, String> {
     async fn from_client(client: C) -> Self {
         Self {
             client,
-            root: "http://wxxy.cczu.edu.cn",
+            root: "http://wxxy.cczu.edu.cn".to_owned(),
         }
     }
 }
@@ -127,10 +127,12 @@ mod ptest {
 
     #[tokio::test]
     async fn test() {
-        let client = DefaultClient::iccard("1");
-        let app: ICCardApplication<DefaultClient, &'static str> =
-            client.visit::<ICCardApplication<_, _>>().await;
+        tokio::spawn(async {
+            let client = DefaultClient::iccard("1");
+            let app =
+                client.visit::<ICCardApplication<_, _>>().await;
 
-        println!("{:?}", app.list_all_preset_buildings().await.unwrap());
+            println!("{:?}", app.list_all_preset_buildings().await.unwrap());
+        });
     }
 }
