@@ -61,10 +61,13 @@ impl<C: Client> JwqywxApplication<C> {
                 match message.message.get(0) {
                     Some(msg) => {
                         let id = msg.id.clone();
-                        self.client.properties().write().await.insert("yhid", Property::String(id.clone()));
+                        self.client
+                            .properties()
+                            .write()
+                            .await
+                            .insert("yhid", Property::String(id.clone()));
                     }
-                    None => {},
-                    
+                    None => {}
                 }
                 return Ok(message);
             }
