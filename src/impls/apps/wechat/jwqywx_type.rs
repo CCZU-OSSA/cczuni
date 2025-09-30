@@ -28,6 +28,8 @@ pub struct LoginUserData {
     pub gender: String,
     #[serde(rename = "yhqx")]
     pub permission: String,
+    #[serde(rename = "yhid")]
+    pub id: String,
 }
 
 #[derive(Deserialize, Debug)]

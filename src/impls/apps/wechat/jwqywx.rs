@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 use crate::{
     base::{
         app::Application,
-        client::Client,
+        client::{Client, Property},
         typing::{other_error, TorErr},
     },
     internals::fields::{DEFAULT_HEADERS, WECHAT_APP_API},
@@ -58,6 +58,14 @@ impl<C: Client> JwqywxApplication<C> {
                 let message = serde_json::from_str::<Message<LoginUserData>>(&text)?;
                 self.write_token(format!("Bearer {}", message.token.clone().unwrap()))
                     .await;
+                match message.message.get(0) {
+                    Some(msg) => {
+                        let id = msg.id.clone();
+                        self.client.properties().write().await.insert("yhid", Property::String(id.clone()));
+                    }
+                    None => {},
+                    
+                }
                 return Ok(message);
             }
         }
@@ -155,6 +163,7 @@ pub mod calendar {
                 .json(&json!({
                     "xh":self.client.account().user,
                     "xq":term,
+                    "yhid":self.client.properties().read().await.get("yhid").map(|e| e.get_string_unwrap()).unwrap_or_default(),
                 }))
                 .send()
                 .await;
