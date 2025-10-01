@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 use crate::{
     base::{
         app::Application,
-        client::{Client, Property},
+        client::Client,
         typing::{other_error, TorErr},
     },
     internals::fields::{DEFAULT_HEADERS, WECHAT_APP_API},
@@ -17,6 +17,7 @@ use super::jwqywx_type::{CourseGrade, LoginUserData, Message, StudentPoint, Term
 pub struct JwqywxApplication<C> {
     client: C,
     headers: Arc<RwLock<HeaderMap>>,
+    authorizationid: Arc<RwLock<Option<String>>>,
 }
 
 impl<C: Client> Application<C> for JwqywxApplication<C> {
@@ -33,6 +34,7 @@ impl<C: Client> Application<C> for JwqywxApplication<C> {
         Self {
             client,
             headers: Arc::new(RwLock::new(header)),
+            authorizationid: Arc::new(RwLock::new(None)),
         }
     }
 }
@@ -56,19 +58,21 @@ impl<C: Client> JwqywxApplication<C> {
         if let Ok(response) = result {
             if let Ok(text) = response.text().await {
                 let message = serde_json::from_str::<Message<LoginUserData>>(&text)?;
-                self.write_token(format!("Bearer {}", message.token.clone().unwrap()))
-                    .await;
-                match message.message.get(0) {
-                    Some(msg) => {
-                        let id = msg.id.clone();
-                        self.client
-                            .properties()
-                            .write()
-                            .await
-                            .insert("yhid", Property::String(id.clone()));
-                    }
-                    None => {}
-                }
+                self.write_token(format!(
+                    "Bearer {}",
+                    message.token.clone().ok_or(other_error("error"))?
+                ))
+                .await;
+                self.write_authorizationid(
+                    message
+                        .message
+                        .get(0)
+                        .ok_or(other_error("Jwqywx Login Failed, No User Data!"))?
+                        .id
+                        .clone(),
+                )
+                .await;
+
                 return Ok(message);
             }
         }
@@ -89,6 +93,16 @@ impl<C: Client> JwqywxApplication<C> {
         *self.headers.write().await = header;
     }
 
+    async fn write_authorizationid(&self, id: String) {
+        let mut authorizationid = self.authorizationid.write().await;
+        *authorizationid = Some(id);
+    }
+
+    async fn get_authorizationid(&self) -> TorErr<String> {
+        let authorizationid = self.authorizationid.read().await;
+        authorizationid.clone().ok_or(other_error("Not logged in"))
+    }
+
     pub async fn get_grades(&self) -> TorErr<Message<CourseGrade>> {
         let result = self
             .client
@@ -96,7 +110,7 @@ impl<C: Client> JwqywxApplication<C> {
             .post(format!("{}/api/cj_xh", WECHAT_APP_API))
             .headers(self.headers.read().await.clone())
             .json(&json!({
-                "xh":self.client.account().user,
+                "xh":self.get_authorizationid().await?,
             }))
             .send()
             .await;
@@ -113,7 +127,7 @@ impl<C: Client> JwqywxApplication<C> {
             .post(format!("{}/api/cj_xh_xfjdpm", WECHAT_APP_API))
             .headers(self.headers.read().await.clone())
             .json(&json!({
-                "xh":self.client.account().user,
+                "xh":self.get_authorizationid().await?,
             }))
             .send()
             .await;
@@ -166,7 +180,7 @@ pub mod calendar {
                 .json(&json!({
                     "xh":self.client.account().user,
                     "xq":term,
-                    "yhid":self.client.properties().read().await.get("yhid").map(|e| e.get_string_unwrap()).unwrap_or_default(),
+                    "yhid":self.get_authorizationid().await?,
                 }))
                 .send()
                 .await;
