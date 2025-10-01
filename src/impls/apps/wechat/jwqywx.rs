@@ -124,7 +124,7 @@ impl<C: Client> JwqywxApplication<C> {
         let result = self
             .client
             .reqwest_client()
-            .post(format!("{}/api/cj_xh_xfjdpm", WECHAT_APP_API))
+            .post(format!("{}/api/cj_xh_xfjd", WECHAT_APP_API))
             .headers(self.headers.read().await.clone())
             .json(&json!({
                 "xh":self.get_authorizationid().await?,

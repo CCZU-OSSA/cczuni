@@ -100,4 +100,12 @@ mod test {
         let grades = app.get_grades().await.unwrap();
         println!("{:?}", grades);
     }
+
+    #[tokio::test]
+    async fn test_rank() {
+        let client = DefaultClient::default();
+        let app = client.visit::<JwqywxApplication<_>>().await;
+        app.login().await.unwrap();
+        println!("{:?}", app.get_credits_and_rank().await.unwrap());
+    }
 }

@@ -80,8 +80,8 @@ pub struct CourseGrade {
 
 #[derive(Deserialize, Debug)]
 pub struct StudentPoint {
-    #[serde(rename = "nj")]
-    pub grade: String,
+    // #[serde(rename = "nj")]
+    // pub grade: String,
     #[serde(rename = "bh")]
     pub class_id: String,
     #[serde(rename = "bj")]
@@ -90,22 +90,30 @@ pub struct StudentPoint {
     pub student_id: String,
     #[serde(rename = "xm")]
     pub student_name: String,
-    #[serde(rename = "xfjd")]
-    pub grade_points: String,
-    #[serde(rename = "pm")]
-    pub rank: String,
-    #[serde(rename = "zypm")]
-    pub major_rank: String,
-    #[serde(rename = "zxfjd")]
-    pub total_grade_points: String,
-    #[serde(rename = "zxf")]
-    pub total_credits: String,
-    #[serde(rename = "pjcjxf")]
-    pub average_credits: String,
+    #[serde(rename = "xb")]
+    pub student_gender: String,
+    #[serde(rename = "xjqk")]
+    pub student_status: String,
+    #[serde(rename = "csny")]
+    pub student_birthday: String,
+    #[serde(rename = "xsid")]
+    pub student_xid: String,
     #[serde(rename = "pjxfjd")]
-    pub average_grade_points: String,
-    #[serde(rename = "pjcj")]
-    pub average_grade: String,
+    pub grade_points: f32,
+    // #[serde(rename = "pm")]
+    // pub rank: String,
+    // #[serde(rename = "zypm")]
+    // pub major_rank: String,
+    // #[serde(rename = "zxfjd")]
+    // pub total_grade_points: String,
+    // #[serde(rename = "zxf")]
+    // pub total_credits: String,
+    // #[serde(rename = "pjcjxf")]
+    // pub average_credits: String,
+    // #[serde(rename = "pjxfjd")]
+    // pub average_grade_points: String,
+    // #[serde(rename = "pjcj")]
+    // pub average_grade: String,
 }
 
 #[derive(Debug, Deserialize)]
