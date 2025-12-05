@@ -200,12 +200,14 @@ impl<C: Client> JwqywxApplication<C> {
         // 100,80,100,80,100,80,
         scores: Vec<i32>,
         comments: String,
-    ) -> TorErr<Message<()>> {
+    ) -> TorErr<()> {
         let pjjg = scores
             .iter()
             .map(|s| s.to_string())
             .collect::<Vec<String>>()
-            .join(",");
+            .join(",")
+            + ",";
+
         let result = self
             .client
             .reqwest_client()
@@ -214,9 +216,8 @@ impl<C: Client> JwqywxApplication<C> {
             .json(&json!({
                 "pjxq":term,
                 "yhdm":self.client.account().user,
-                "jsdm":evaluatable_class.teacher_id,
+                "jsdm":evaluatable_class.teacher_code,
                 "kcdm":evaluatable_class.course_code,
-                "bh":evaluatable_class.class_id,
                 "zhdf":overall_score,
                 "pjjg":pjjg,
                 "yjjy":comments,
@@ -224,10 +225,12 @@ impl<C: Client> JwqywxApplication<C> {
             }))
             .send()
             .await;
-        if let Ok(response) = result {
-            return Ok(response.json().await.map_err(other_error)?);
+
+        if let Ok(_) = result {
+            return Ok(());
         }
-        Err(other_error("Not implemented"))
+
+        Err(other_error("Request failed"))
     }
 }
 
