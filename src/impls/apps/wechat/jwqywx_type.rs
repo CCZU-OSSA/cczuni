@@ -122,6 +122,87 @@ pub struct Term {
     pub term: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct Exam {
+    #[serde(rename = "lb")]
+    pub category: String,
+    #[serde(rename = "xq")]
+    pub term: String,
+    #[serde(rename = "xsbh")]
+    pub student_number: String,
+    #[serde(rename = "xsbj")]
+    pub class_full_name: String,
+    #[serde(rename = "xh")]
+    pub student_id: String,
+    #[serde(rename = "xm")]
+    pub student_name: String,
+    #[serde(rename = "BH")]
+    pub class_code: String,
+    #[serde(rename = "kcdm")]
+    pub course_code: String,
+    #[serde(rename = "kch")]
+    pub course_serial: String,
+    #[serde(rename = "kcmc")]
+    pub course_name: String,
+    #[serde(rename = "xklb")]
+    pub course_category: String,
+    #[serde(rename = "yx")]
+    pub active_flag: i32,
+    pub id: i32,
+    #[serde(rename = "ksz")]
+    pub start_week: Option<i32>,
+    #[serde(rename = "zc")]
+    pub week: Option<i32>,
+    #[serde(rename = "jc1")]
+    pub lesson_start: Option<i32>,
+    #[serde(rename = "jc2")]
+    pub lesson_end: Option<i32>,
+    #[serde(rename = "jse")]
+    pub classroom: Option<String>,
+    #[serde(rename = "sj")]
+    pub time_range: Option<String>,
+    #[serde(rename = "jkjs1")]
+    pub invigilator_one: Option<String>,
+    #[serde(rename = "jkjs2")]
+    pub invigilator_two: Option<String>,
+    #[serde(rename = "bz")]
+    pub remark: Option<String>,
+    #[serde(rename = "bmmc")]
+    pub campus: String,
+    #[serde(rename = "kssj")]
+    pub exam_time: Option<String>,
+    #[serde(rename = "bj")]
+    pub class_name: String,
+    #[serde(rename = "sjxx")]
+    pub schedule_details: Option<String>,
+    #[serde(rename = "jseid")]
+    pub classroom_id: i32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct EvaluatableClass {
+    #[serde(rename = "bh")]
+    pub class_id: String,
+    #[serde(rename = "kcdm")]
+    pub course_code: String,
+    #[serde(rename = "kcmc")]
+    pub course_name: String,
+    #[serde(rename = "kch")]
+    pub course_serial: String,
+    #[serde(rename = "lbdh")]
+    pub category_code: String,
+    #[serde(rename = "jsdm")]
+    pub teacher_code: String,
+    #[serde(rename = "jsmc")]
+    pub teacher_name: String,
+    #[serde(rename = "pjqk")]
+    pub evaluation_status: Option<String>,
+    #[serde(rename = "pjid")]
+    pub evaluation_id: i32,
+    #[serde(rename = "jsid")]
+    pub teacher_id: String,
+}
+
 #[cfg(feature = "calendar")]
 pub mod calendar {
     use std::collections::HashMap;

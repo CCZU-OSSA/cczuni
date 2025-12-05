@@ -9,10 +9,11 @@ use crate::{
         client::Client,
         typing::{other_error, TorErr},
     },
+    impls::apps::wechat::jwqywx_type::EvaluatableClass,
     internals::fields::{DEFAULT_HEADERS, WECHAT_APP_API},
 };
 
-use super::jwqywx_type::{CourseGrade, LoginUserData, Message, StudentPoint, Term};
+use super::jwqywx_type::{CourseGrade, Exam, LoginUserData, Message, StudentPoint, Term};
 
 pub struct JwqywxApplication<C> {
     client: C,
@@ -148,6 +149,85 @@ impl<C: Client> JwqywxApplication<C> {
             return Ok(response.json().await.map_err(other_error)?);
         }
         Err(other_error("Request Failed"))
+    }
+
+    /// Get Term from [`JwqywxApplication::terms`]
+    pub async fn get_exams(&self, term: String) -> TorErr<Message<Exam>> {
+        let result = self
+            .client
+            .reqwest_client()
+            .post(format!("{}/api/ks_xs_kslb", WECHAT_APP_API))
+            .headers(self.headers.read().await.clone())
+            .json(&json!({
+                "xq":term,
+                "yhdm":self.client.account().user,
+                "dm":"学分制考试",
+                "yhid":self.get_authorizationid().await?,
+            }))
+            .send()
+            .await;
+        if let Ok(response) = result {
+            return Ok(response.json().await.map_err(other_error)?);
+        }
+        Err(other_error("Request failed"))
+    }
+
+    pub async fn get_evaluatable_class(&self, term: String) -> TorErr<Message<EvaluatableClass>> {
+        let result = self
+            .client
+            .reqwest_client()
+            .post(format!("{}/api/pj_xspj_kcxx", WECHAT_APP_API))
+            .headers(self.headers.read().await.clone())
+            .json(&json!({
+                "pjxq":term,
+                "xh":self.client.account().user,
+                "yhid":self.get_authorizationid().await?,
+            }))
+            .send()
+            .await;
+        if let Ok(response) = result {
+            return Ok(response.json().await.map_err(other_error)?);
+        }
+        Err(other_error("Not implemented"))
+    }
+
+    pub async fn evaluate_class(
+        &self,
+        term: String,
+        evaluatable_class: &EvaluatableClass,
+        // 90
+        overall_score: i32,
+        // 100,80,100,80,100,80,
+        scores: Vec<i32>,
+        comments: String,
+    ) -> TorErr<Message<()>> {
+        let pjjg = scores
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>()
+            .join(",");
+        let result = self
+            .client
+            .reqwest_client()
+            .post(format!("{}/api/pj_insert_xspj", WECHAT_APP_API))
+            .headers(self.headers.read().await.clone())
+            .json(&json!({
+                "pjxq":term,
+                "yhdm":self.client.account().user,
+                "jsdm":evaluatable_class.teacher_id,
+                "kcdm":evaluatable_class.course_code,
+                "bh":evaluatable_class.class_id,
+                "zhdf":overall_score,
+                "pjjg":pjjg,
+                "yjjy":comments,
+                "yhid":self.get_authorizationid().await?,
+            }))
+            .send()
+            .await;
+        if let Ok(response) = result {
+            return Ok(response.json().await.map_err(other_error)?);
+        }
+        Err(other_error("Not implemented"))
     }
 }
 
