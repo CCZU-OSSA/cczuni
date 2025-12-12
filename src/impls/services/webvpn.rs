@@ -1,14 +1,11 @@
 use std::{collections::HashMap, future::Future};
 
-use reqwest::StatusCode;
-
 use crate::{
-    base::{
-        client::Client,
-        typing::{other_error, TorErr},
-    },
+    base::client::Client,
     internals::fields::{DEFAULT_HEADERS, ROOT_SSO_LOGIN, ROOT_VPN},
 };
+use anyhow::Result;
+use reqwest::StatusCode;
 
 use super::webvpn_type::{
     ElinkProxyData, ElinkServiceData, ElinkServiceInfoData, ElinkUserInfoData, Message,
@@ -23,31 +20,31 @@ pub trait WebVPNService {
     fn webvpn_get_user_info(
         &self,
         user_id: impl Into<String>,
-    ) -> impl Future<Output = TorErr<Message<ElinkUserInfoData>>>;
+    ) -> impl Future<Output = Result<Message<ElinkUserInfoData>>>;
     fn webvpn_get_tree_with_service(
         &self,
         user_id: impl Into<String>,
-    ) -> impl Future<Output = TorErr<Message<ElinkServiceInfoData>>>;
+    ) -> impl Future<Output = Result<Message<ElinkServiceInfoData>>>;
     fn webvpn_get_service_by_user(
         &self,
         user_id: impl Into<String>,
-    ) -> impl Future<Output = TorErr<Message<Vec<ElinkServiceData>>>>;
+    ) -> impl Future<Output = Result<Message<Vec<ElinkServiceData>>>>;
     fn webvpn_get_visit_service_by_user(
         &self,
         user_id: impl Into<String>,
-    ) -> impl Future<Output = TorErr<Message<Vec<ElinkServiceData>>>>;
+    ) -> impl Future<Output = Result<Message<Vec<ElinkServiceData>>>>;
     fn webvpn_get_proxy_service(
         &self,
         user_id: impl Into<String>,
-    ) -> impl Future<Output = TorErr<Message<ElinkProxyData>>>;
+    ) -> impl Future<Output = Result<Message<ElinkProxyData>>>;
 }
 
 impl<C: Client> WebVPNService for C {
     async fn webvpn_get_user_info(
         &self,
         user_id: impl Into<String>,
-    ) -> TorErr<Message<ElinkUserInfoData>> {
-        if let Ok(response) = self
+    ) -> Result<Message<ElinkUserInfoData>> {
+        let response = self
             .reqwest_client()
             .get(format!(
                 "{}/enlink/api/client/user/findByUserId/{}",
@@ -56,24 +53,20 @@ impl<C: Client> WebVPNService for C {
             ))
             .headers(DEFAULT_HEADERS.clone())
             .send()
-            .await
-        {
-            if let Ok(json) = response.text().await {
-                return Ok(serde_json::from_str(json.as_str())?);
-            }
-        }
-        Err(other_error("Get User Info failed"))
+            .await?;
+        let json = response.text().await?;
+        Ok(serde_json::from_str(&json)?)
     }
 
     async fn webvpn_get_tree_with_service(
         &self,
         user_id: impl Into<String>,
-    ) -> TorErr<Message<ElinkServiceInfoData>> {
+    ) -> Result<Message<ElinkServiceInfoData>> {
         let mut body = HashMap::new();
         body.insert("nameLike", "".to_string());
         body.insert("serviceNameLike", "".to_string());
         body.insert("userId", user_id.into());
-        if let Ok(response) = self
+        let response = self
             .reqwest_client()
             .post(format!(
                 "{}/enlink/api/client/service/group/treeWithService/",
@@ -83,24 +76,20 @@ impl<C: Client> WebVPNService for C {
             .header("Referer", format!("{}/enlink/", ROOT_VPN))
             .header("Origin", ROOT_VPN)
             .header("Content-Type", "application/json;charset=utf-8")
-            .body(serde_json::to_string(&body).unwrap())
+            .body(serde_json::to_string(&body)?)
             .send()
-            .await
-        {
-            if let Ok(json) = response.text().await {
-                return Ok(serde_json::from_str(json.as_str())?);
-            }
-        }
-        Err(other_error("Get Tree Service failed"))
+            .await?;
+        let json = response.text().await?;
+        Ok(serde_json::from_str(&json)?)
     }
 
     async fn webvpn_get_service_by_user(
         &self,
         user_id: impl Into<String>,
-    ) -> TorErr<Message<Vec<ElinkServiceData>>> {
+    ) -> Result<Message<Vec<ElinkServiceData>>> {
         let mut param = HashMap::new();
         param.insert("name", "");
-        if let Ok(response) = self
+        let response = self
             .reqwest_client()
             .get(format!(
                 "{}/enlink/api/client/service/sucmp/findServiceByUserId/{}",
@@ -112,22 +101,18 @@ impl<C: Client> WebVPNService for C {
             .header("Origin", ROOT_VPN)
             .query(&param)
             .send()
-            .await
-        {
-            if let Ok(json) = response.text().await {
-                return Ok(serde_json::from_str(json.as_str())?);
-            }
-        }
-        Err(other_error("Get User Service failed"))
+            .await?;
+        let json = response.text().await?;
+        Ok(serde_json::from_str(&json)?)
     }
 
     async fn webvpn_get_visit_service_by_user(
         &self,
         user_id: impl Into<String>,
-    ) -> TorErr<Message<Vec<ElinkServiceData>>> {
+    ) -> Result<Message<Vec<ElinkServiceData>>> {
         let mut param = HashMap::new();
         param.insert("name", "");
-        if let Ok(response) = self
+        let response = self
             .reqwest_client()
             .get(format!(
                 "{}/enlink/api/client/service/suvisitmp/findVisitServiceByUserId/{}",
@@ -138,13 +123,9 @@ impl<C: Client> WebVPNService for C {
             .header("Referer", format!("{}/enlink/", ROOT_VPN))
             .query(&param)
             .send()
-            .await
-        {
-            if let Ok(json) = response.text().await {
-                return Ok(serde_json::from_str(json.as_str())?);
-            }
-        }
-        Err(other_error("Get User Visit Service failed"))
+            .await?;
+        let json = response.text().await?;
+        Ok(serde_json::from_str(&json)?)
     }
 
     /// Client Redirect Policy: [`reqwest::redirect::Policy::none()`]
@@ -158,8 +139,8 @@ impl<C: Client> WebVPNService for C {
     async fn webvpn_get_proxy_service(
         &self,
         user_id: impl Into<String>,
-    ) -> TorErr<Message<ElinkProxyData>> {
-        if let Ok(response) = self
+    ) -> Result<Message<ElinkProxyData>> {
+        let response = self
             .reqwest_client()
             .get(format!(
                 "{}/enlink/api/client/user/terminal/rules/{}",
@@ -167,12 +148,8 @@ impl<C: Client> WebVPNService for C {
                 user_id.into()
             ))
             .send()
-            .await
-        {
-            if let Ok(json) = response.text().await {
-                return Ok(serde_json::from_str(json.as_str())?);
-            }
-        }
-        Err(other_error("Get Proxy Service failed"))
+            .await?;
+        let json = response.text().await?;
+        Ok(serde_json::from_str(&json)?)
     }
 }

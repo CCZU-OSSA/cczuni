@@ -7,7 +7,7 @@ use std::{
 };
 use uuid::Uuid;
 
-use crate::base::typing::{other_error, TorErr};
+use anyhow::{Result, bail};
 
 pub static EVENT_PROP: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|| {
     let mut map: HashMap<&str, &str> = HashMap::new();
@@ -207,13 +207,13 @@ pub trait ApplicationCalendarExt {
         firstweekdate: String,
         schedule: Schedule,
         reminder: Option<i32>,
-    ) -> TorErr<Calendar>;
+    ) -> Result<Calendar>;
     fn generate_icalendar(
         &self,
         firstweekdate: String,
         schedule: Schedule,
         reminder: Option<i32>,
-    ) -> impl Future<Output = TorErr<Calendar>>;
+    ) -> impl Future<Output = Result<Calendar>>;
 }
 
 pub trait CalendarParser {
@@ -221,14 +221,14 @@ pub trait CalendarParser {
     ///
     /// Each Vec<String> is in order.
 
-    fn get_classinfo_week_matrix(&self) -> impl Future<Output = TorErr<Vec<Vec<RawCourse>>>>;
+    fn get_classinfo_week_matrix(&self) -> impl Future<Output = Result<Vec<Vec<RawCourse>>>>;
 }
 
 pub trait TermCalendarParser: CalendarParser {
     fn get_term_classinfo_week_matrix(
         &self,
         term: String,
-    ) -> impl Future<Output = TorErr<Vec<Vec<RawCourse>>>>;
+    ) -> impl Future<Output = Result<Vec<Vec<RawCourse>>>>;
 }
 
 impl<P: CalendarParser> ApplicationCalendarExt for P {
@@ -238,7 +238,7 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
         firstweekdate: String,
         schedule: Schedule,
         reminder: Option<i32>,
-    ) -> TorErr<Calendar> {
+    ) -> Result<Calendar> {
         let mut calendar = Calendar::new();
         calendar.timezone("Asia/Shanghai").name("课程表");
         let mut classlist = classlist;
@@ -332,7 +332,7 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
         firstmonday: String,
         schedule: Schedule,
         reminder: Option<i32>,
-    ) -> TorErr<Calendar> {
+    ) -> Result<Calendar> {
         let classlist = self.get_classinfo_week_matrix().await?;
 
         self.generate_icalendar_from_classlist(
@@ -344,7 +344,7 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
     }
 }
 
-pub fn parse_week_matrix(row_matrix: Vec<Vec<RawCourse>>) -> TorErr<Vec<ParsedCourse>> {
+pub fn parse_week_matrix(row_matrix: Vec<Vec<RawCourse>>) -> Result<Vec<ParsedCourse>> {
     let mut column_matrix: Vec<Vec<RawCourse>> = vec![];
     for i in 0..7 {
         let mut column: Vec<RawCourse> = vec![];
@@ -352,7 +352,7 @@ pub fn parse_week_matrix(row_matrix: Vec<Vec<RawCourse>>) -> TorErr<Vec<ParsedCo
             if let Some(value) = v.get(i) {
                 column.push(value.clone())
             } else {
-                return Err(other_error("Parse Classinfo error"));
+                bail!("Parse Classinfo error");
             }
         }
         column_matrix.push(column);

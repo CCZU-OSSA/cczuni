@@ -1,36 +1,33 @@
 use std::{collections::HashMap, future::Future};
 
+use super::sso_type::{ElinkLoginInfo, SSOLoginConnectType, SSOUniversalLoginInfo};
 use crate::{
-    base::{
-        client::Client,
-        typing::{other_error, TorErr},
-    },
+    base::client::Client,
     internals::{
         cookies_io::CookiesIOExt,
         fields::{DEFAULT_HEADERS, ROOT_SSO_LOGIN, ROOT_VPN_URL},
         recursion::recursion_redirect_handle,
     },
 };
+use anyhow::{Context, Result, bail};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use reqwest::{cookie::Cookie, header::LOCATION, Response, StatusCode};
 use scraper::{Html, Selector};
-
-use super::sso_type::{ElinkLoginInfo, SSOLoginConnectType, SSOUniversalLoginInfo};
 
 pub trait SSOUniversalLogin {
     /// This method implements [`ROOT_SSO`] url login.
     ///
     /// You can only get the ElinkLoginInfo in WebVPN Mode...
-    fn sso_universal_login(&self) -> impl Future<Output = TorErr<Option<ElinkLoginInfo>>>;
+    fn sso_universal_login(&self) -> impl Future<Output = Result<Option<ElinkLoginInfo>>>;
 
     fn sso_service_login(
         &self,
         service: impl Into<String>,
-    ) -> impl Future<Output = TorErr<Response>>;
+    ) -> impl Future<Output = Result<Response>>;
 }
 
 impl<C: Client + Clone + Send> SSOUniversalLogin for C {
-    async fn sso_universal_login(&self) -> TorErr<Option<ElinkLoginInfo>> {
+    async fn sso_universal_login(&self) -> Result<Option<ElinkLoginInfo>> {
         let login = universal_sso_login(self.clone()).await?;
         self.properties().write().await.insert(
             SSOLoginConnectType::key(),
@@ -38,86 +35,65 @@ impl<C: Client + Clone + Send> SSOUniversalLogin for C {
         );
 
         match login.login_connect_type {
-            SSOLoginConnectType::WEBVPN => {
-                let response = login.response;
-
-                if let Some(cookie) = &response
-                    .cookies()
-                    .filter(|cookie| cookie.name() == "clientInfo")
-                    .collect::<Vec<Cookie>>()
-                    .first()
-                {
-                    let json =
-                        String::from_utf8(BASE64_STANDARD.decode(cookie.value()).unwrap()).unwrap();
-                    let data: ElinkLoginInfo = serde_json::from_str(&json)?;
-
-                    Ok(Some(data))
-                } else {
-                    Err(other_error("Get `EnlinkLoginInfo` failed"))
-                }
-            }
+            SSOLoginConnectType::WEBVPN => Ok(Some(serde_json::from_str(&String::from_utf8(
+                BASE64_STANDARD.decode(
+                    login
+                        .response
+                        .cookies()
+                        .filter(|cookie| cookie.name() == "clientInfo")
+                        .collect::<Vec<Cookie>>()
+                        .first()
+                        .context("Get `EnlinkLoginInfo` Failed")?
+                        .value(),
+                )?,
+            )?)?)),
             SSOLoginConnectType::COMMON => Ok(None),
         }
     }
 
-    async fn sso_service_login(&self, service: impl Into<String>) -> TorErr<Response> {
+    async fn sso_service_login(&self, service: impl Into<String>) -> Result<Response> {
         service_sso_login(self.clone(), service).await
     }
 }
 
-async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUniversalLoginInfo> {
-    let response = client
-        .reqwest_client()
-        .get(ROOT_SSO_LOGIN)
-        .send()
-        .await
-        .map_err(other_error)?;
+async fn universal_sso_login(client: impl Client + Clone + Send) -> Result<SSOUniversalLoginInfo> {
+    let response = client.reqwest_client().get(ROOT_SSO_LOGIN).send().await?;
     let status = response.status();
     // use webvpn
     if status == StatusCode::FOUND {
         // redirect to webvpn root
         // recursion to get the login page
-        let response = recursion_redirect_handle(
-            client.clone(),
-            response
-                .headers()
-                .get("location")
-                .unwrap()
-                .to_str()
-                .unwrap(),
-        )
-        .await
-        .map_err(other_error)?;
+        let location = response
+            .headers()
+            .get("location")
+            .context("No location header in initial response")?
+            .to_str()
+            .context("Invalid location header")?;
+        let response = recursion_redirect_handle(client.clone(), location).await?;
 
         let url = response.url().clone();
-        let dom = response.text().await.unwrap();
-        let mut form = parse_hidden_values(dom.as_str());
+        let dom = response.text().await?;
+        let mut form = parse_hidden_values(dom.as_str())?;
 
         let account = client.account();
         form.insert("username".into(), account.user);
         form.insert("password".into(), BASE64_STANDARD.encode(account.password));
 
-        let response = client
-            .reqwest_client()
-            .post(url)
-            .form(&form)
-            .send()
-            .await
-            .map_err(other_error)?;
+        let response = client.reqwest_client().post(url).form(&form).send().await?;
 
-        let redirect_location_header = response.headers().get("location");
-        if let None = redirect_location_header {
-            return Err(other_error("Redirect to None"));
-        }
-        let redirect_location = redirect_location_header.unwrap().to_str().unwrap();
+        let redirect_location = response
+            .headers()
+            .get("location")
+            .context("No redirect location after login")?
+            .to_str()
+            .context("Invalid redirect location")?;
 
         let response = client
             .reqwest_client()
             .get(redirect_location)
             .headers(DEFAULT_HEADERS.clone())
             .send()
-            .await
-            .map_err(other_error)?;
+            .await?;
 
         client
             .cookies()
@@ -136,38 +112,30 @@ async fn universal_sso_login(client: impl Client + Clone + Send) -> TorErr<SSOUn
             login_connect_type: SSOLoginConnectType::COMMON,
         })
     } else {
-        Err(other_error("Login Failed"))
+        bail!("Login Failed with status: {}", status)
     }
 }
 
 async fn service_sso_login(
     client: impl Client + Clone + Send,
     service: impl Into<String>,
-) -> TorErr<Response> {
+) -> Result<Response> {
     let api = format!("{}?service={}", ROOT_SSO_LOGIN, service.into());
-    let response = client
-        .reqwest_client()
-        .get(api.clone())
-        .send()
-        .await
-        .map_err(other_error)?;
+    let response = client.reqwest_client().get(api.clone()).send().await?;
 
     // Has Logined before
     if response.status() == StatusCode::FOUND {
-        return Ok(recursion_redirect_handle(
-            client,
-            response
-                .headers()
-                .get(LOCATION)
-                .ok_or(other_error("Get Location Failed"))?
-                .to_str()
-                .map_err(other_error)?,
-        )
-        .await?);
+        let location = response
+            .headers()
+            .get(LOCATION)
+            .context("Get Location Failed")?
+            .to_str()
+            .context("Invalid location header")?;
+        return Ok(recursion_redirect_handle(client, location).await?);
     }
 
-    let dom = response.text().await.unwrap();
-    let mut login_param = parse_hidden_values(dom.as_str());
+    let dom = response.text().await?;
+    let mut login_param = parse_hidden_values(dom.as_str())?;
     let account = client.account();
     login_param.insert("username".into(), account.user);
     login_param.insert("password".into(), BASE64_STANDARD.encode(account.password));
@@ -178,37 +146,36 @@ async fn service_sso_login(
         .form(&login_param)
         .headers(DEFAULT_HEADERS.clone())
         .send()
-        .await
-        .map_err(other_error)?;
+        .await?;
 
     if response.status() == StatusCode::FOUND {
-        Ok(recursion_redirect_handle(
-            client,
-            response
-                .headers()
-                .get(LOCATION)
-                .ok_or(other_error("Get Location Failed"))?
-                .to_str()
-                .map_err(other_error)?,
-        )
-        .await?)
+        let location = response
+            .headers()
+            .get(LOCATION)
+            .context("Get Location Failed")?
+            .to_str()
+            .context("Invalid location header")?;
+        Ok(recursion_redirect_handle(client, location).await?)
     } else {
         Ok(response)
     }
 }
 
-pub fn parse_hidden_values(html: &str) -> HashMap<String, String> {
+pub fn parse_hidden_values(html: &str) -> Result<HashMap<String, String>> {
     let mut hidden_values = HashMap::new();
     let dom = Html::parse_document(html);
     let input_hidden_selector = Selector::parse(r#"input[type="hidden"]"#).unwrap();
     let tags_hidden = dom.select(&input_hidden_selector);
 
-    tags_hidden.for_each(|tag_hidden| {
-        hidden_values.insert(
-            tag_hidden.attr("name").unwrap().to_string(),
-            tag_hidden.attr("value").unwrap().to_string(),
-        );
-    });
+    for tag_hidden in tags_hidden {
+        let name = tag_hidden
+            .attr("name")
+            .context("Hidden input missing name attribute")?;
+        let value = tag_hidden
+            .attr("value")
+            .context("Hidden input missing value attribute")?;
+        hidden_values.insert(name.to_string(), value.to_string());
+    }
 
-    hidden_values
+    Ok(hidden_values)
 }

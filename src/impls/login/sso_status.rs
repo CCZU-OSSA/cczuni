@@ -2,21 +2,15 @@ use std::future::Future;
 
 use reqwest::StatusCode;
 
-use crate::{
-    base::{
-        client::Client,
-        typing::{other_error, TorErr},
-    },
-    internals::fields::ROOT_SSO_LOGIN,
-};
-
 use super::sso_type::SSOLoginConnectType;
+use crate::{base::client::Client, internals::fields::ROOT_SSO_LOGIN};
+use anyhow::{bail, Result};
 
 pub trait SSOLoginStatus {
     fn sso_login_available(&self) -> impl Future<Output = bool>;
     fn sso_login_connect_type(&self) -> impl Future<Output = Option<SSOLoginConnectType>>;
-    fn sso_login_type(&self) -> impl Future<Output = TorErr<SSOLoginConnectType>>;
-    fn sso_login_type_write(&self) -> impl Future<Output = TorErr<SSOLoginConnectType>>;
+    fn sso_login_type(&self) -> impl Future<Output = Result<SSOLoginConnectType>>;
+    fn sso_login_type_write(&self) -> impl Future<Output = Result<SSOLoginConnectType>>;
 }
 
 impl<C: Client> SSOLoginStatus for C {
@@ -63,27 +57,25 @@ impl<C: Client> SSOLoginStatus for C {
         }
     }
 
-    async fn sso_login_type(&self) -> TorErr<SSOLoginConnectType> {
+    async fn sso_login_type(&self) -> Result<SSOLoginConnectType> {
         if let Some(connect_type) = self.sso_login_connect_type().await {
             return Ok(connect_type);
         }
 
-        let response = self
+        match self
             .reqwest_client()
             .get(ROOT_SSO_LOGIN)
             .send()
-            .await
-            .map_err(other_error)?;
-        let statuscode = response.status();
-
-        match statuscode {
+            .await?
+            .status()
+        {
             StatusCode::OK => Ok(SSOLoginConnectType::COMMON),
             StatusCode::FOUND => Ok(SSOLoginConnectType::WEBVPN),
-            _ => Err(other_error("Status Code Error")),
+            _ => bail!("Status Code Error"),
         }
     }
 
-    async fn sso_login_type_write(&self) -> TorErr<SSOLoginConnectType> {
+    async fn sso_login_type_write(&self) -> Result<SSOLoginConnectType> {
         let connect = self.sso_login_type().await?;
         let locker = self.properties();
         let mut guard = locker.write().await;

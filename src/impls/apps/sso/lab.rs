@@ -1,14 +1,11 @@
 use std::collections::HashMap;
 
 use crate::{
-    base::{
-        app::Application,
-        client::Client,
-        typing::{other_error, EmptyOrErr, TorErr},
-    },
+    base::{app::Application, client::Client},
     impls::login::sso::SSOUniversalLogin,
     internals::fields::DEFAULT_HEADERS,
 };
+use anyhow::Result;
 
 static LABAPP_ROOT: &'static str = "https://sysaqgl.cczu.edu.cn";
 
@@ -24,7 +21,7 @@ impl<C: Client> Application<C> for LabApplication<C> {
 
 impl<C: Client + Clone + Send + Sync> LabApplication<C> {
     /// Support LAN/WAN
-    pub async fn exam_login(&self) -> EmptyOrErr {
+    pub async fn exam_login(&self) -> Result<()> {
         self.client
             .sso_service_login(format!("{LABAPP_ROOT}/labexam/examIDSLogin.php"))
             .await?;
@@ -32,7 +29,7 @@ impl<C: Client + Clone + Send + Sync> LabApplication<C> {
         Ok(())
     }
 
-    pub async fn exam_increase_thirty_secs(&self) -> TorErr<LabExamStudyInfo> {
+    pub async fn exam_increase_thirty_secs(&self) -> Result<LabExamStudyInfo> {
         let api = format!("{LABAPP_ROOT}/labexam/exam_xuexi_online.php");
         let mut params = HashMap::new();
         params.insert("cmd", "xuexi_online");
@@ -44,11 +41,9 @@ impl<C: Client + Clone + Send + Sync> LabApplication<C> {
             .headers(DEFAULT_HEADERS.clone())
             .form(&params)
             .send()
-            .await
-            .map_err(other_error)?
+            .await?
             .json()
-            .await
-            .map_err(other_error)?)
+            .await?)
     }
 }
 

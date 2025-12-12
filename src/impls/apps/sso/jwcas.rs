@@ -5,9 +5,9 @@ use scraper::{ElementRef, Html, Selector};
 
 use crate::base::app::Application;
 use crate::base::client::Client;
-use crate::base::typing::{other_error, EmptyOrErr, TorErr};
 use crate::impls::services::sso_redirect::SSORedirect;
 use crate::internals::recursion::recursion_redirect_handle;
+use anyhow::{bail, Result};
 
 use super::jwcas_type::GradeData;
 
@@ -28,30 +28,28 @@ impl<C: Client + Clone> Application<C> for JwcasApplication<C> {
 
 impl<C: Client + Clone + Send> JwcasApplication<C> {
     /// will call login after [`Self::from_client`]
-    pub async fn from_client_login(client: C) -> TorErr<Self> {
+    pub async fn from_client_login(client: C) -> Result<Self> {
         let app = Self::from_client(client).await;
         app.login().await?;
         Ok(app)
     }
 
     /// Visit this Url will login in too.
-    pub async fn login(&self) -> EmptyOrErr {
+    pub async fn login(&self) -> Result<()> {
         let api = format!("{}/web_cas/web_cas_login_jwgl.aspx", self.root);
-        recursion_redirect_handle(self.client.clone(), &api)
-            .await
-            .map_err(other_error)?;
+        recursion_redirect_handle(self.client.clone(), &api).await?;
         Ok(())
     }
 
-    pub async fn get_classlist_html(&self) -> TorErr<String> {
+    pub async fn get_classlist_html(&self) -> Result<String> {
         self.get_html("/web_jxrw/cx_kb_xsgrkb.aspx").await
     }
 
-    pub async fn get_gradelist_html(&self) -> TorErr<String> {
+    pub async fn get_gradelist_html(&self) -> Result<String> {
         self.get_html("/web_cjgl/cx_cj_jxjhcj_xh.aspx").await
     }
 
-    pub async fn get_html(&self, service: impl Display) -> TorErr<String> {
+    pub async fn get_html(&self, service: impl Display) -> Result<String> {
         let api = format!("{}{}", self.root, service);
 
         if let Ok(response) = self.client.reqwest_client().get(api).send().await {
@@ -59,11 +57,10 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
                 return Ok(response.text().await.unwrap());
             }
         }
-
-        Err(other_error(format!("Get {service} failed")))
+        bail!("Get {service} failed");
     }
 
-    pub async fn get_gradeinfo_vec(&self) -> TorErr<Vec<GradeData>> {
+    pub async fn get_gradeinfo_vec(&self) -> Result<Vec<GradeData>> {
         let text = self.get_gradelist_html().await?;
         let tb_up = Selector::parse(r#"table[id="GVkbk"]"#).unwrap();
         let selector = Selector::parse(r#"tr[class="dg1-item"]"#).unwrap();
@@ -97,15 +94,15 @@ fn extract_string(element: Option<&ElementRef>) -> String {
 pub mod calendar {
     use std::collections::HashMap;
 
+    use anyhow::{Context, Result};
     use scraper::{Html, Selector};
 
     use crate::base::client::Client;
-    use crate::base::typing::{other_error, TorErr};
     use crate::extension::calendar::{CalendarParser, RawCourse};
 
     use super::JwcasApplication;
     impl<C: Client + Clone + Send> CalendarParser for JwcasApplication<C> {
-        async fn get_classinfo_week_matrix(&self) -> TorErr<Vec<Vec<RawCourse>>> {
+        async fn get_classinfo_week_matrix(&self) -> Result<Vec<Vec<RawCourse>>> {
             let text = self.get_classlist_html().await?;
             let doc = Html::parse_document(&text);
 
@@ -121,7 +118,7 @@ pub mod calendar {
             let mut teachers = HashMap::new();
             doc.select(&tb_up_rowseletor)
                 .next()
-                .ok_or(other_error("Select Teacher Failed"))?
+                .context("Select Teacher Failed")?
                 .select(&tb_dg1_itemseletor)
                 .for_each(|e| {
                     let items: Vec<String> = e
@@ -143,7 +140,7 @@ pub mod calendar {
             Ok(doc
                 .select(&tb_dn_seletor)
                 .next()
-                .ok_or(other_error("Select Course Failed"))?
+                .context("Select Course Failed")?
                 .select(&tb_dg1_itemseletor)
                 .map(|e| {
                     let mut items: Vec<String> = e

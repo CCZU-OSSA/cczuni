@@ -3,17 +3,14 @@ use std::fmt::Display;
 use tokio::join;
 
 use crate::{
-    base::{
-        app::Application,
-        client::Client,
-        typing::{other_error, TorErr},
-    },
+    base::{app::Application, client::Client},
     impls::apps::iccard::{
         iccard_constants::PRESET_DORMBUILDINGS,
         iccard_type::{DormArea, DormBuilding, DormBuildingsData, DormRoomElectricityBillData},
     },
     internals::fields::DEFAULT_HEADERS,
 };
+use anyhow::Result;
 
 pub struct ICCardApplication<C, S> {
     pub client: C,
@@ -38,7 +35,7 @@ impl<C: Client + Clone, S: Display> ICCardApplication<C, S> {
         area: DormArea<impl Into<String>>,
         building: DormBuilding,
         room: impl Into<String>,
-    ) -> TorErr<DormRoomElectricityBillData> {
+    ) -> Result<DormRoomElectricityBillData> {
         let url = self.endpoint("wechat/callinterface/queryElecRoomInfo.html");
         let areaname = area.name.into();
         let areaid = area.id.into();
@@ -69,15 +66,14 @@ impl<C: Client + Clone, S: Display> ICCardApplication<C, S> {
                 }).to_string(),
             }))
             .send()
-            .await
-            .map_err(other_error)?;
-        Ok(response.json().await.map_err(other_error)?)
+            .await?;
+        Ok(response.json().await?)
     }
 
     pub async fn list_buildings(
         &self,
         area: DormArea<impl Into<String>>,
-    ) -> TorErr<DormBuildingsData> {
+    ) -> Result<DormBuildingsData> {
         let url = self.endpoint("wechat/callinterface/queryElecBuilding.html");
         let id = area.id.into();
         let name = area.name.into();
@@ -97,12 +93,11 @@ impl<C: Client + Clone, S: Display> ICCardApplication<C, S> {
                 "account": self.client.account().user,
             }))
             .send()
-            .await
-            .map_err(other_error)?;
-        Ok(response.json().await.map_err(other_error)?)
+            .await?;
+        Ok(response.json().await?)
     }
 
-    pub async fn list_all_preset_buildings(&self) -> TorErr<Vec<DormBuildingsData>> {
+    pub async fn list_all_preset_buildings(&self) -> Result<Vec<DormBuildingsData>> {
         let task = |index: usize| async move {
             let area: DormArea<&'static str> = PRESET_DORMBUILDINGS[index].clone();
 
