@@ -9,7 +9,7 @@ use crate::{
         recursion::recursion_redirect_handle,
     },
 };
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 use base64::{prelude::BASE64_STANDARD, Engine};
 use reqwest::{cookie::Cookie, header::LOCATION, Response, StatusCode};
 use scraper::{Html, Selector};

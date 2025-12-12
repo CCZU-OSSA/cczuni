@@ -7,7 +7,7 @@ use std::{
 };
 use uuid::Uuid;
 
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 
 pub static EVENT_PROP: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|| {
     let mut map: HashMap<&str, &str> = HashMap::new();
