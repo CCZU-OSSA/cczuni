@@ -42,7 +42,9 @@ mod test {
 
         impl<C: Client + Clone> Application<C> for Foo<C> {
             async fn from_client(client: &C) -> Self {
-                Self { client: client.clone() }
+                Self {
+                    client: client.clone(),
+                }
             }
         }
 

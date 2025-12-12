@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use reqwest::{StatusCode, header::LOCATION};
+use reqwest::{header::LOCATION, StatusCode};
 
 use super::sso_type::SSOLoginConnectType;
 use crate::{base::client::Client, internals::fields::ROOT_SSO_LOGIN};
@@ -29,12 +29,7 @@ impl<C: Client> SSOLoginStatus for C {
             }
 
             if response.status() == StatusCode::FOUND {
-                let location = response
-                    .headers()
-                    .get(LOCATION)
-                    .unwrap()
-                    .to_str()
-                    .unwrap();
+                let location = response.headers().get(LOCATION).unwrap().to_str().unwrap();
                 if location.contains("sso/login") {
                     return false;
                 }

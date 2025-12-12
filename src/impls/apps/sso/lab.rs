@@ -15,7 +15,9 @@ pub struct LabApplication<C> {
 
 impl<C: Client + Clone> Application<C> for LabApplication<C> {
     async fn from_client(client: &C) -> Self {
-        Self { client: client.clone() }
+        Self {
+            client: client.clone(),
+        }
     }
 }
 
