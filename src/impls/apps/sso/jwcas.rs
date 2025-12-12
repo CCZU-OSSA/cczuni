@@ -1,13 +1,12 @@
 use std::fmt::Display;
 
-use reqwest::StatusCode;
 use scraper::{ElementRef, Html, Selector};
 
 use crate::base::app::Application;
 use crate::base::client::Client;
 use crate::impls::services::sso_redirect::SSORedirect;
 use crate::internals::recursion::recursion_redirect_handle;
-use anyhow::{bail, Result};
+use anyhow::{Context, Result};
 
 use super::jwcas_type::GradeData;
 
@@ -18,7 +17,7 @@ pub struct JwcasApplication<C> {
 }
 
 impl<C: Client + Clone> Application<C> for JwcasApplication<C> {
-    async fn from_client(client: C) -> Self {
+    async fn from_client(client: &C) -> Self {
         Self {
             client: client.clone(),
             root: client.sso_redirect("http://219.230.159.132").await,
@@ -29,7 +28,7 @@ impl<C: Client + Clone> Application<C> for JwcasApplication<C> {
 impl<C: Client + Clone + Send> JwcasApplication<C> {
     /// will call login after [`Self::from_client`]
     pub async fn from_client_login(client: C) -> Result<Self> {
-        let app = Self::from_client(client).await;
+        let app = Self::from_client(&client).await;
         app.login().await?;
         Ok(app)
     }
@@ -51,13 +50,14 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
 
     pub async fn get_html(&self, service: impl Display) -> Result<String> {
         let api = format!("{}{}", self.root, service);
-
-        if let Ok(response) = self.client.reqwest_client().get(api).send().await {
-            if response.status() == StatusCode::OK {
-                return Ok(response.text().await.unwrap());
-            }
-        }
-        bail!("Get {service} failed");
+        Ok(self
+            .client
+            .reqwest_client()
+            .get(api)
+            .send()
+            .await?
+            .text()
+            .await?)
     }
 
     pub async fn get_gradeinfo_vec(&self) -> Result<Vec<GradeData>> {
@@ -68,7 +68,7 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
         Ok(dom
             .select(&tb_up)
             .next()
-            .unwrap()
+            .context("Select Grade Table Failed")?
             .select(&selector)
             .map(|e| {
                 let childs: Vec<ElementRef> = e.child_elements().collect();

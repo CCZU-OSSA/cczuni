@@ -18,9 +18,9 @@ pub struct ICCardApplication<C, S> {
 }
 
 impl<C: Client + Clone> Application<C> for ICCardApplication<C, String> {
-    async fn from_client(client: C) -> Self {
+    async fn from_client(client: &C) -> Self {
         Self {
-            client,
+            client: client.clone(),
             root: "http://wxxy.cczu.edu.cn".to_owned(),
         }
     }

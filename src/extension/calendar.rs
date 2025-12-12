@@ -265,13 +265,11 @@ impl<P: CalendarParser> ApplicationCalendarExt for P {
                 let start = NaiveDateTime::parse_from_str(
                     format!("{}{}", day, start_time).as_str(),
                     "%Y%m%d%H%M",
-                )
-                .unwrap();
+                )?;
                 let end = NaiveDateTime::parse_from_str(
                     format!("{}{}", day, end_time).as_str(),
                     "%Y%m%d%H%M",
-                )
-                .unwrap();
+                )?;
 
                 let mut event = Event::new();
 

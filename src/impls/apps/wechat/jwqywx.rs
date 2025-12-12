@@ -18,8 +18,8 @@ pub struct JwqywxApplication<C> {
     authorizationid: Arc<RwLock<Option<String>>>,
 }
 
-impl<C: Client> Application<C> for JwqywxApplication<C> {
-    async fn from_client(client: C) -> Self {
+impl<C: Client + Clone> Application<C> for JwqywxApplication<C> {
+    async fn from_client(client: &C) -> Self {
         let mut header = DEFAULT_HEADERS.clone();
         header.insert(
             REFERER,
@@ -30,7 +30,7 @@ impl<C: Client> Application<C> for JwqywxApplication<C> {
             HeaderValue::from_static("http://jwqywx.cczu.edu.cn"),
         );
         Self {
-            client,
+            client: client.clone(),
             headers: Arc::new(RwLock::new(header)),
             authorizationid: Arc::new(RwLock::new(None)),
         }
