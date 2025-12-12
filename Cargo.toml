@@ -29,14 +29,16 @@ chrono = { version = "0.4", optional = true }
 icalendar = { version = "0.17.5", optional = true }
 const_format = "0.2.34"
 anyhow = "1"
+lru = { version = "0.16.2", optional = true }
 
 
 [features]
 vendored = ["reqwest/native-tls-vendored"]
 default-tls = ["reqwest/default-tls"]
 rustls-tls = ["reqwest/rustls-tls"]
-full = ["webvpn-login", "calendar", "internals", "rustls-tls"]
+full = ["webvpn-login", "calendar", "internals", "rustls-tls", "lru-client"]
 default = ["full"]
 webvpn-login = ["dep:aes", "dep:cbc", "dep:rand"]
 calendar = ["dep:chrono", "dep:uuid", "dep:icalendar"]
+lru-client = ["dep:lru"]
 internals = []

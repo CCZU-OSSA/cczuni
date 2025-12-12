@@ -1,10 +1,29 @@
-use std::{collections::HashMap, sync::Arc};
-
+#[cfg(feature = "lru-client")]
+use lru::LruCache;
 use reqwest::redirect::Policy;
 use reqwest_cookie_store::CookieStoreMutex;
+use std::{
+    collections::HashMap,
+    num::NonZeroUsize,
+    sync::{Arc, LazyLock, Mutex},
+};
 use tokio::sync::RwLock;
 
 use crate::base::client::{Account, Client, Property};
+
+#[cfg(feature = "lru-client")]
+static CACHE_SIZE: LazyLock<NonZeroUsize> = LazyLock::new(|| {
+    std::env::var("CCZUNI_CACHE_SIZE")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(3)
+        .try_into()
+        .unwrap_or(NonZeroUsize::new(3).unwrap())
+});
+
+#[cfg(feature = "lru-client")]
+static CLIENT_CACHE: LazyLock<Mutex<LruCache<Account, Arc<DefaultClient>>>> =
+    LazyLock::new(|| Mutex::new(LruCache::new(*CACHE_SIZE)));
 
 #[derive(Debug, Clone)]
 pub struct DefaultClient {
@@ -45,6 +64,19 @@ impl DefaultClient {
 
     pub fn iccard(card: impl Into<String>) -> Self {
         Self::new(Account::new(card, ""))
+    }
+
+    /// 使用 LRU 缓存创建或复用 DefaultClient 实例
+    /// 对于相同 Account，返回缓存的单例；否则创建新实例并缓存
+    #[cfg(feature = "lru-client")]
+    pub fn lru_new(account: Account) -> Arc<Self> {
+        let mut cache = CLIENT_CACHE.lock().unwrap();
+        if let Some(client) = cache.get(&account) {
+            return client.clone();
+        }
+        let client = Arc::new(Self::new(account.clone()));
+        cache.put(account, client.clone());
+        client
     }
 }
 
