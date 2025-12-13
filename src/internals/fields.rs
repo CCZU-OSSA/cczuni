@@ -1,8 +1,8 @@
 use std::sync::LazyLock;
 
 use reqwest::{
-    header::{HeaderMap, HeaderValue, USER_AGENT},
     Url,
+    header::{HeaderMap, HeaderValue, USER_AGENT},
 };
 
 pub static DEFAULT_HEADERS: LazyLock<HeaderMap> = LazyLock::new(|| {

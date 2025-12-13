@@ -1,7 +1,7 @@
 use crate::{base::client::Client, internals::fields::DEFAULT_HEADERS};
 use anyhow::{Context, Result};
 use async_recursion::async_recursion;
-use reqwest::{header::LOCATION, Response, StatusCode};
+use reqwest::{Response, StatusCode, header::LOCATION};
 
 #[async_recursion]
 pub async fn recursion_redirect_handle(

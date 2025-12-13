@@ -1,4 +1,4 @@
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, ORIGIN, REFERER};
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue, ORIGIN, REFERER};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{collections::HashMap, sync::Arc};
@@ -279,7 +279,7 @@ pub mod calendar {
     use crate::{
         base::client::Client,
         extension::calendar::{CalendarParser, RawCourse, TermCalendarParser},
-        impls::apps::wechat::jwqywx_type::{calendar::SerdeRowCourses, Message},
+        impls::apps::wechat::jwqywx_type::{Message, calendar::SerdeRowCourses},
         internals::fields::WECHAT_APP_API,
     };
     use anyhow::{Context, Result};

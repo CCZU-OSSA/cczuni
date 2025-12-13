@@ -1,6 +1,6 @@
 use std::{collections::HashMap, future::Future, sync::LazyLock};
 
-use reqwest::header::{HeaderMap, COOKIE};
+use reqwest::header::{COOKIE, HeaderMap};
 
 use crate::base::client::Client;
 use crate::impls::login::{sso_status::SSOLoginStatus, sso_type::SSOLoginConnectType};
