@@ -1,4 +1,4 @@
-use reqwest::{cookie::Cookie as ReqwestCookie, Url};
+use reqwest::{Url, cookie::Cookie as ReqwestCookie};
 use reqwest_cookie_store::{CookieStore, RawCookie};
 
 pub trait CookiesIOExt {

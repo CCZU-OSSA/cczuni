@@ -1,10 +1,10 @@
 use std::future::Future;
 
-use reqwest::{header::LOCATION, StatusCode};
+use reqwest::{StatusCode, header::LOCATION};
 
 use super::sso_type::SSOLoginConnectType;
 use crate::{base::client::Client, internals::fields::ROOT_SSO_LOGIN};
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 
 pub trait SSOLoginStatus {
     fn sso_login_available(&self) -> impl Future<Output = bool>;

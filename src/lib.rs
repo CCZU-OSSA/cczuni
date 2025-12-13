@@ -17,7 +17,7 @@ mod test {
             app::{AppVisitor, Application},
             client::Client,
         },
-        extension::calendar::{parse_week_matrix, CalendarParser},
+        extension::calendar::{CalendarParser, parse_week_matrix},
         impls::{
             apps::{sso::jwcas::JwcasApplication, wechat::jwqywx::JwqywxApplication},
             client::DefaultClient,

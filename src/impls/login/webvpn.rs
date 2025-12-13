@@ -6,14 +6,14 @@ use crate::{
     internals::fields::{DEFAULT_HEADERS, ROOT_VPN},
 };
 use aes::{
-    cipher::{block_padding::Pkcs7, BlockEncryptMut, KeyIvInit},
     Aes128Enc,
+    cipher::{BlockEncryptMut, KeyIvInit, block_padding::Pkcs7},
 };
-use anyhow::{bail, Context, Result};
-use base64::{prelude::BASE64_STANDARD, Engine};
+use anyhow::{Context, Result, bail};
+use base64::{Engine, prelude::BASE64_STANDARD};
 use cbc::Encryptor;
 use rand::Rng;
-use reqwest::{cookie::Cookie, StatusCode};
+use reqwest::{StatusCode, cookie::Cookie};
 
 pub type CbcAES128Enc = Encryptor<Aes128Enc>;
 

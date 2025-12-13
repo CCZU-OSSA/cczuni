@@ -9,9 +9,9 @@ use crate::{
         recursion::recursion_redirect_handle,
     },
 };
-use anyhow::{bail, Context, Result};
-use base64::{prelude::BASE64_STANDARD, Engine};
-use reqwest::{cookie::Cookie, header::LOCATION, Response, StatusCode};
+use anyhow::{Context, Result, bail};
+use base64::{Engine, prelude::BASE64_STANDARD};
+use reqwest::{Response, StatusCode, cookie::Cookie, header::LOCATION};
 use scraper::{Html, Selector};
 
 pub trait SSOUniversalLogin {
