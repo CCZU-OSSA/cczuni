@@ -2,11 +2,11 @@
 use lru::LruCache;
 use reqwest::redirect::Policy;
 use reqwest_cookie_store::CookieStoreMutex;
-use std::{
-    collections::HashMap,
-    num::NonZeroUsize,
-    sync::{Arc, LazyLock},
-};
+#[cfg(feature = "lru-client")]
+use std::num::NonZeroUsize;
+#[cfg(feature = "lru-client")]
+use std::sync::LazyLock;
+use std::{collections::HashMap, sync::Arc};
 #[cfg(feature = "lru-client")]
 use tokio::sync::Mutex;
 use tokio::sync::RwLock;
