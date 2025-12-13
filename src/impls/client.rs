@@ -5,8 +5,10 @@ use reqwest_cookie_store::CookieStoreMutex;
 use std::{
     collections::HashMap,
     num::NonZeroUsize,
-    sync::{Arc, LazyLock, Mutex},
+    sync::{Arc, LazyLock},
 };
+#[cfg(feature = "lru-client")]
+use tokio::sync::Mutex;
 use tokio::sync::RwLock;
 
 use crate::base::client::{Account, Client, Property};
@@ -22,7 +24,7 @@ static CACHE_SIZE: LazyLock<NonZeroUsize> = LazyLock::new(|| {
 });
 
 #[cfg(feature = "lru-client")]
-static CLIENT_CACHE: LazyLock<Mutex<LruCache<Account, Arc<DefaultClient>>>> =
+static CLIENT_CACHE: LazyLock<Mutex<LruCache<Account, DefaultClient>>> =
     LazyLock::new(|| Mutex::new(LruCache::new(*CACHE_SIZE)));
 
 #[derive(Debug, Clone)]
@@ -69,12 +71,12 @@ impl DefaultClient {
     /// 使用 LRU 缓存创建或复用 DefaultClient 实例
     /// 对于相同 Account，返回缓存的单例；否则创建新实例并缓存
     #[cfg(feature = "lru-client")]
-    pub fn lru_new(account: Account) -> Arc<Self> {
-        let mut cache = CLIENT_CACHE.lock().unwrap();
+    pub async fn lru_new(account: Account) -> Self {
+        let mut cache = CLIENT_CACHE.lock().await;
         if let Some(client) = cache.get(&account) {
             return client.clone();
         }
-        let client = Arc::new(Self::new(account.clone()));
+        let client = Self::new(account.clone());
         cache.put(account, client.clone());
         client
     }

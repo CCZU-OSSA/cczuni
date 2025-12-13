@@ -1,10 +1,14 @@
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, ORIGIN, REFERER};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 use tokio::sync::RwLock;
 
 use crate::{
-    base::{app::Application, client::Client},
+    base::{
+        app::{Application, CachedApplication},
+        client::{Client, Property},
+    },
     impls::apps::wechat::jwqywx_type::EvaluatableClass,
     internals::fields::{DEFAULT_HEADERS, WECHAT_APP_API},
 };
@@ -207,6 +211,66 @@ impl<C: Client> JwqywxApplication<C> {
             .send()
             .await?;
         Ok(())
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct CachedJwqywxApplication {
+    pub authorizationid: Option<String>,
+    pub headers: HashMap<String, String>,
+}
+const CACHE_KEY: &str = "cached_jwqywx_application";
+impl<C: Client + Clone> CachedApplication<C> for JwqywxApplication<C> {
+    async fn cache(&self) -> Result<()> {
+        self.client.properties().write().await.insert(
+            CACHE_KEY,
+            Property::String(
+                serde_json::to_string(&CachedJwqywxApplication {
+                    authorizationid: self.authorizationid.read().await.clone(),
+                    headers: self
+                        .headers
+                        .read()
+                        .await
+                        .iter()
+                        .map(|(k, v)| {
+                            (
+                                k.as_str().to_string(),
+                                v.to_str().unwrap_or_default().to_string(),
+                            )
+                        })
+                        .collect(),
+                })
+                .unwrap(),
+            ),
+        );
+
+        Ok(())
+    }
+
+    async fn try_restore(client: &C) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        let properties = client.properties();
+        let cached = properties.read().await.get(CACHE_KEY)?.clone();
+        let cached: CachedJwqywxApplication = serde_json::from_str(
+            &cached
+                .get_string()
+                .context("Cached JwqywxApplication is not a string")
+                .ok()?,
+        )
+        .ok()?;
+        return Some(JwqywxApplication {
+            client: client.clone(),
+            headers: Arc::new(RwLock::new(
+                cached
+                    .headers
+                    .into_iter()
+                    .filter_map(|(k, v)| Some((k.parse().ok()?, HeaderValue::from_str(&v).ok()?)))
+                    .collect(),
+            )),
+            authorizationid: Arc::new(RwLock::new(cached.authorizationid)),
+        });
     }
 }
 
