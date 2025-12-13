@@ -4,7 +4,7 @@
 </div>
 
 <div align=center>
-    <img src="https://img.shields.io/badge/Rust-2021-brown" alt="Rust">
+    <img src="https://img.shields.io/badge/Rust-2024-brown" alt="Rust">
     <img src="https://img.shields.io/github/languages/code-size/CCZU-OSSA/cczuni?color=green" alt="size">
 </div>
 
