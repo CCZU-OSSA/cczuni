@@ -1,4 +1,4 @@
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, ORIGIN, REFERER};
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue, ORIGIN, REFERER};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{collections::HashMap, sync::Arc};
@@ -224,24 +224,21 @@ impl<C: Client + Clone> CachedApplication<C> for JwqywxApplication<C> {
     async fn cache(&self) -> Result<()> {
         self.client.properties().write().await.insert(
             CACHE_KEY,
-            Property::String(
-                serde_json::to_string(&CachedJwqywxApplication {
-                    authorizationid: self.authorizationid.read().await.clone(),
-                    headers: self
-                        .headers
-                        .read()
-                        .await
-                        .iter()
-                        .map(|(k, v)| {
-                            (
-                                k.as_str().to_string(),
-                                v.to_str().unwrap_or_default().to_string(),
-                            )
-                        })
-                        .collect(),
-                })
-                .unwrap(),
-            ),
+            Property::String(serde_json::to_string(&CachedJwqywxApplication {
+                authorizationid: self.authorizationid.read().await.clone(),
+                headers: self
+                    .headers
+                    .read()
+                    .await
+                    .iter()
+                    .map(|(k, v)| {
+                        (
+                            k.as_str().to_string(),
+                            v.to_str().unwrap_or_default().to_string(),
+                        )
+                    })
+                    .collect(),
+            })?),
         );
 
         Ok(())
@@ -279,7 +276,7 @@ pub mod calendar {
     use crate::{
         base::client::Client,
         extension::calendar::{CalendarParser, RawCourse, TermCalendarParser},
-        impls::apps::wechat::jwqywx_type::{calendar::SerdeRowCourses, Message},
+        impls::apps::wechat::jwqywx_type::{Message, calendar::SerdeRowCourses},
         internals::fields::WECHAT_APP_API,
     };
     use anyhow::{Context, Result};

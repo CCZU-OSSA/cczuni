@@ -4,18 +4,24 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
+tokio = { version = "1", default-features = false, features = [
+    "rt-multi-thread",
+    "macros",
+    "sync",
+] }
 reqwest = { version = "0.12", default-features = false, features = [
     "cookies",
-    "multipart", # Support Post a Form
     "json",
 ] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde = { version = "1", default-features = false, features = ["derive"] }
+serde_json = { version = "1", default-features = false }
 async-recursion = "1"
+anyhow = "1"
 
 base64 = "0.22"
-scraper = { version = "0.25.0", features = ["atomic"] }
+scraper = { version = "0.25.0", default-features = false, features = [
+    "atomic",
+] }
 reqwest_cookie_store = "0.9.0"
 
 # webvpn-login
@@ -25,10 +31,9 @@ rand = { version = "0.9.2", optional = true }
 
 # calendar
 uuid = { version = "1", features = ["v4", "v3"], optional = true }
-chrono = { version = "0.4", optional = true }
+chrono = { version = "0.4", default-features = false, optional = true }
 icalendar = { version = "0.17.5", optional = true }
-const_format = "0.2.34"
-anyhow = "1"
+# lru-client
 lru = { version = "0.16.2", optional = true }
 
 

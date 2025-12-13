@@ -1,5 +1,4 @@
 use crate::internals::fields::{DEFAULT_HEADERS, ROOT_SSO_LOGIN, WECHAT_APP_API};
-use const_format::formatcp;
 use reqwest::{Method, StatusCode, Url};
 use std::{collections::HashMap, time::Duration};
 use tokio::task::JoinSet;
@@ -17,10 +16,13 @@ pub async fn services_status_code() -> HashMap<&'static str, StatusCode> {
     let mut status_map = HashMap::new();
     let client = reqwest::Client::new();
     // Example URLs for different services
-    let sites = [
-        ("SSO", ROOT_SSO_LOGIN),
-        ("WeChat", formatcp!("{}/api/login", WECHAT_APP_API)),
-        ("WebVPN", "https://zmvpn.cczu.edu.cn/enlink/sso/login"),
+    let sites = vec![
+        ("SSO", ROOT_SSO_LOGIN.to_string()),
+        ("WeChat", format!("{}/api/login", WECHAT_APP_API)),
+        (
+            "WebVPN",
+            "https://zmvpn.cczu.edu.cn/enlink/sso/login".to_string(),
+        ),
     ];
 
     let mut tasks = JoinSet::new();
