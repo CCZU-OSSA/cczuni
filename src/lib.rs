@@ -114,7 +114,6 @@ mod test {
         println!("{:?}", plans);
     }
 
-
     #[tokio::test]
     async fn test_rank() {
         let client = DefaultClient::default();

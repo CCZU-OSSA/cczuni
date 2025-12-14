@@ -56,30 +56,42 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
         let __txtcxxq = Selector::parse(r#"input[id="Txtcxxq"]"#).unwrap();
         let dom = Html::parse_document(&index);
         let form = [
-            ("ScriptManager1","UpdatePanel2|Gvzydm"),
-            ("__EVENTTARGET","Gvzydm"),
-            ("__EVENTARGUMENT","CmdWh$0"),
-            ("__VIEWSTATE",hiddens.get("__VIEWSTATE").unwrap()),
-            ("__VIEWSTATEGENERATOR",hiddens.get("__VIEWSTATEGENERATOR").unwrap()),
-            ("__VIEWSTATEENCRYPTED",hiddens.get("__VIEWSTATEENCRYPTED").unwrap()),
-            ("Txtcxxq",dom.select(&__txtcxxq)
-                .next()
-                .context("Get Txtcxxq Failed")?
-                .value()
-                .attr("value")
-                .unwrap_or("")),
-            ("DDnj",dom.select(&__ddnj)
-                .next()
-                .context("Get DDnj Failed")?
-                .child_elements()
-                .next()
-                .unwrap()
-                .value()
-                .attr("value")
-                .unwrap_or("")),
-            ("Txtzyxx",""),
-            ("__ASYNCPOST","false"),
-            ];
+            ("ScriptManager1", "UpdatePanel2|Gvzydm"),
+            ("__EVENTTARGET", "Gvzydm"),
+            ("__EVENTARGUMENT", "CmdWh$0"),
+            ("__VIEWSTATE", hiddens.get("__VIEWSTATE").unwrap()),
+            (
+                "__VIEWSTATEGENERATOR",
+                hiddens.get("__VIEWSTATEGENERATOR").unwrap(),
+            ),
+            (
+                "__VIEWSTATEENCRYPTED",
+                hiddens.get("__VIEWSTATEENCRYPTED").unwrap(),
+            ),
+            (
+                "Txtcxxq",
+                dom.select(&__txtcxxq)
+                    .next()
+                    .context("Get Txtcxxq Failed")?
+                    .value()
+                    .attr("value")
+                    .unwrap_or(""),
+            ),
+            (
+                "DDnj",
+                dom.select(&__ddnj)
+                    .next()
+                    .context("Get DDnj Failed")?
+                    .child_elements()
+                    .next()
+                    .unwrap()
+                    .value()
+                    .attr("value")
+                    .unwrap_or(""),
+            ),
+            ("Txtzyxx", ""),
+            ("__ASYNCPOST", "false"),
+        ];
         self.post_html("/web_jxjh/jxjh_cx.aspx", &form).await
     }
 
