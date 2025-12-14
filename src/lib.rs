@@ -71,7 +71,7 @@ mod test {
             let app = client.visit::<JwqywxApplication<_>>().await;
             app.login().await.unwrap();
             app.get_grades().await.unwrap();
-            cas.get_plan_vec().await.unwrap();
+            cas.get_techplans().await.unwrap();
         });
     }
 
@@ -110,7 +110,7 @@ mod test {
         client.sso_universal_login().await.unwrap();
         let app = client.visit::<JwcasApplication<_>>().await;
         app.login().await.unwrap();
-        let plans = app.get_plan_vec().await.unwrap();
+        let plans = app.get_techplans().await.unwrap();
         println!("{:?}", plans);
     }
 

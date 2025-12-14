@@ -6,7 +6,7 @@ pub struct GradeData {
 }
 
 #[derive(Debug, Clone)]
-pub struct PlanData {
+pub struct TechPlanData {
     pub term: String,
     pub code: String,
     pub name: String,

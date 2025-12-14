@@ -6,7 +6,7 @@ use crate::base::client::Client;
 use crate::impls::login::sso::parse_hidden_values;
 use crate::impls::services::sso_redirect::SSORedirect;
 use crate::internals::recursion::recursion_redirect_handle;
-use crate::{base::app::Application, impls::apps::sso::jwcas_type::PlanData};
+use crate::{base::app::Application, impls::apps::sso::jwcas_type::TechPlanData};
 use anyhow::{Context, Result};
 
 use super::jwcas_type::GradeData;
@@ -49,7 +49,7 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
         self.get_html("/web_cjgl/cx_cj_jxjhcj_xh.aspx").await
     }
 
-    pub async fn get_plan_html(&self) -> Result<String> {
+    pub async fn get_techplan_txt(&self) -> Result<String> {
         let index = self.get_html("/web_jxjh/jxjh_cx.aspx").await?;
         let hiddens = parse_hidden_values(index.as_str())?;
         let ddnj_selector = Selector::parse(r#"select[id="DDnj"]"#).unwrap();
@@ -127,8 +127,8 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
             .await?)
     }
 
-    pub async fn get_plan_vec(&self) -> Result<Vec<PlanData>> {
-        let text = self.get_plan_html().await?;
+    pub async fn get_techplans(&self) -> Result<Vec<TechPlanData>> {
+        let text = self.get_techplan_txt().await?;
         let tb_up = Selector::parse(r#"table[id="GVjxjh"]"#).unwrap();
         let selector = Selector::parse(r#"tr[class="dg1-item"]"#).unwrap();
         let dom = Html::parse_document(&text);
@@ -139,7 +139,7 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
             .select(&selector)
             .map(|e| {
                 let childs: Vec<ElementRef> = e.child_elements().collect();
-                PlanData {
+                TechPlanData {
                     term: extract_string(childs.get(1)),
                     code: extract_string(childs.get(2)),
                     name: extract_string(childs.get(3)),
