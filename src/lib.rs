@@ -66,11 +66,12 @@ mod test {
             let client = DefaultClient::default();
             client.sso_universal_login().await.unwrap();
             let foo = client.visit::<Foo<_>>().await;
-            let _ = client.visit::<JwcasApplication<_>>().await;
+            let cas = client.visit::<JwcasApplication<_>>().await;
             foo.login().await;
             let app = client.visit::<JwqywxApplication<_>>().await;
             app.login().await.unwrap();
             app.get_grades().await.unwrap();
+            cas.get_plan_vec().await.unwrap();
         });
     }
 
@@ -102,6 +103,17 @@ mod test {
         let grades = app.get_grades().await.unwrap();
         println!("{:?}", grades);
     }
+
+    #[tokio::test]
+    async fn test_plan() {
+        let client = DefaultClient::default();
+        client.sso_universal_login().await.unwrap();
+        let app = client.visit::<JwcasApplication<_>>().await;
+        app.login().await.unwrap();
+        let plans = app.get_plan_vec().await.unwrap();
+        println!("{:?}", plans);
+    }
+
 
     #[tokio::test]
     async fn test_rank() {

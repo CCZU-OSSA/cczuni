@@ -2,10 +2,11 @@ use std::fmt::Display;
 
 use scraper::{ElementRef, Html, Selector};
 
-use crate::base::app::Application;
 use crate::base::client::Client;
+use crate::impls::login::sso::parse_hidden_values;
 use crate::impls::services::sso_redirect::SSORedirect;
 use crate::internals::recursion::recursion_redirect_handle;
+use crate::{base::app::Application, impls::apps::sso::jwcas_type::PlanData};
 use anyhow::{Context, Result};
 
 use super::jwcas_type::GradeData;
@@ -48,6 +49,40 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
         self.get_html("/web_cjgl/cx_cj_jxjhcj_xh.aspx").await
     }
 
+    pub async fn get_plan_html(&self) -> Result<String> {
+        let index = self.get_html("/web_jxjh/jxjh_cx.aspx").await.unwrap();
+        let hiddens = parse_hidden_values(index.as_str()).unwrap();
+        let __ddnj = Selector::parse(r#"select[id="DDnj"]"#).unwrap();
+        let __txtcxxq = Selector::parse(r#"input[id="Txtcxxq"]"#).unwrap();
+        let dom = Html::parse_document(&index);
+        let form = [
+            ("ScriptManager1","UpdatePanel2|Gvzydm"),
+            ("__EVENTTARGET","Gvzydm"),
+            ("__EVENTARGUMENT","CmdWh$0"),
+            ("__VIEWSTATE",hiddens.get("__VIEWSTATE").unwrap()),
+            ("__VIEWSTATEGENERATOR",hiddens.get("__VIEWSTATEGENERATOR").unwrap()),
+            ("__VIEWSTATEENCRYPTED",hiddens.get("__VIEWSTATEENCRYPTED").unwrap()),
+            ("Txtcxxq",dom.select(&__txtcxxq)
+                .next()
+                .context("Get Txtcxxq Failed")?
+                .value()
+                .attr("value")
+                .unwrap_or("")),
+            ("DDnj",dom.select(&__ddnj)
+                .next()
+                .context("Get DDnj Failed")?
+                .child_elements()
+                .next()
+                .unwrap()
+                .value()
+                .attr("value")
+                .unwrap_or("")),
+            ("Txtzyxx",""),
+            ("__ASYNCPOST","false"),
+            ];
+        self.post_html("/web_jxjh/jxjh_cx.aspx", &form).await
+    }
+
     pub async fn get_html(&self, service: impl Display) -> Result<String> {
         let api = format!("{}{}", self.root, service);
         Ok(self
@@ -58,6 +93,49 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
             .await?
             .text()
             .await?)
+    }
+
+    pub async fn post_html(&self, service: impl Display, form: &[(&str, &str)]) -> Result<String> {
+        let api = format!("{}{}", self.root, service);
+        Ok(self
+            .client
+            .reqwest_client()
+            .post(api)
+            .form(form)
+            .send()
+            .await?
+            .text()
+            .await?)
+    }
+
+    pub async fn get_plan_vec(&self) -> Result<Vec<PlanData>> {
+        let text = self.get_plan_html().await?;
+        let tb_up = Selector::parse(r#"table[id="GVjxjh"]"#).unwrap();
+        let selector = Selector::parse(r#"tr[class="dg1-item"]"#).unwrap();
+        let dom = Html::parse_document(&text);
+        Ok(dom
+            .select(&tb_up)
+            .next()
+            .context("Select Grade Table Failed")?
+            .select(&selector)
+            .map(|e| {
+                let childs: Vec<ElementRef> = e.child_elements().collect();
+                PlanData {
+                    term: extract_string(childs.get(1)),
+                    code: extract_string(childs.get(2)),
+                    name: extract_string(childs.get(3)),
+                    category: extract_string(childs.get(4)),
+                    period: extract_string(childs.get(5)),
+                    credit: extract_string(childs.get(6)),
+                    exam: extract_string(childs.get(7)),
+                    exp_period: extract_string(childs.get(8)),
+                    exp_credit: extract_string(childs.get(9)),
+                    practice_period: extract_string(childs.get(10)),
+                    specialization: extract_string(childs.get(11)),
+                    faculty: extract_string(childs.get(12)),
+                }
+            })
+            .collect())
     }
 
     pub async fn get_gradeinfo_vec(&self) -> Result<Vec<GradeData>> {
