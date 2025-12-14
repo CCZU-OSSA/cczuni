@@ -50,27 +50,34 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
     }
 
     pub async fn get_plan_html(&self) -> Result<String> {
-        let index = self.get_html("/web_jxjh/jxjh_cx.aspx").await.unwrap();
-        let hiddens = parse_hidden_values(index.as_str()).unwrap();
-        let __ddnj = Selector::parse(r#"select[id="DDnj"]"#).unwrap();
-        let __txtcxxq = Selector::parse(r#"input[id="Txtcxxq"]"#).unwrap();
+        let index = self.get_html("/web_jxjh/jxjh_cx.aspx").await?;
+        let hiddens = parse_hidden_values(index.as_str())?;
+        let ddnj_selector = Selector::parse(r#"select[id="DDnj"]"#).unwrap();
+        let txtcxxq_selector = Selector::parse(r#"input[id="Txtcxxq"]"#).unwrap();
         let dom = Html::parse_document(&index);
         let form = [
             ("ScriptManager1", "UpdatePanel2|Gvzydm"),
             ("__EVENTTARGET", "Gvzydm"),
             ("__EVENTARGUMENT", "CmdWh$0"),
-            ("__VIEWSTATE", hiddens.get("__VIEWSTATE").unwrap()),
+            (
+                "__VIEWSTATE",
+                hiddens.get("__VIEWSTATE").context("Get ViewState Failed")?,
+            ),
             (
                 "__VIEWSTATEGENERATOR",
-                hiddens.get("__VIEWSTATEGENERATOR").unwrap(),
+                hiddens
+                    .get("__VIEWSTATEGENERATOR")
+                    .context("Get ViewStateGenerator Failed")?,
             ),
             (
                 "__VIEWSTATEENCRYPTED",
-                hiddens.get("__VIEWSTATEENCRYPTED").unwrap(),
+                hiddens
+                    .get("__VIEWSTATEENCRYPTED")
+                    .context("Get ViewStateCrypted Failed")?,
             ),
             (
                 "Txtcxxq",
-                dom.select(&__txtcxxq)
+                dom.select(&txtcxxq_selector)
                     .next()
                     .context("Get Txtcxxq Failed")?
                     .value()
@@ -79,12 +86,12 @@ impl<C: Client + Clone + Send> JwcasApplication<C> {
             ),
             (
                 "DDnj",
-                dom.select(&__ddnj)
+                dom.select(&ddnj_selector)
                     .next()
                     .context("Get DDnj Failed")?
                     .child_elements()
                     .next()
-                    .unwrap()
+                    .context("Get DDnj Child Failed")?
                     .value()
                     .attr("value")
                     .unwrap_or(""),
