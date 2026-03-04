@@ -50,5 +50,3 @@ We provide a default `crate::impls::client::DefaultClient`, If you want to custo
 ## Docs
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/CCZU-OSSA/cczuni)
-
-```[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/CCZU-OSSA/cczuni)
