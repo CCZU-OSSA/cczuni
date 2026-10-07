@@ -49,6 +49,4 @@ We provide a default `crate::impls::client::DefaultClient`, If you want to custo
 
 ## Docs
 
-```rust
-todo!()
-```
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/CCZU-OSSA/cczuni)
