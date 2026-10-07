@@ -198,86 +198,113 @@ pub mod calendar {
     use crate::extension::calendar::{CalendarParser, RawCourse};
 
     use super::JwcasApplication;
+    pub fn select_text_to_courses(text: &str) -> Result<Vec<Vec<RawCourse>>> {
+        let doc = Html::parse_document(text);
+
+        // used to select teacher
+        let tb_up_rowseletor = Selector::parse(r#"table[id="GVxkall"]"#).unwrap();
+
+        // used to select course
+        let tb_dn_seletor: Selector = Selector::parse(r#"table[id="GVxkkb"]"#).unwrap();
+
+        let tb_dg1_itemseletor = Selector::parse(r#"tr[class="dg1-item"]"#).unwrap();
+        let tb_tdseletor = Selector::parse(r#"td"#).unwrap();
+        let tb_td_with_fontseletor = Selector::parse(r#"td > font"#).unwrap();
+        let mut teachers = HashMap::new();
+        doc.select(&tb_up_rowseletor)
+            .next()
+            .context("Select Teacher Failed")?
+            .select(&tb_dg1_itemseletor)
+            .for_each(|e| {
+                let items: Vec<String> = e
+                    .select(&tb_td_with_fontseletor)
+                    .map(|item| item.inner_html().trim().to_string())
+                    .collect();
+                if !items.is_empty() {
+                    teachers.insert(items[1].clone(), items[5].clone());
+
+                    return;
+                }
+                let items: Vec<String> = e
+                    .select(&tb_tdseletor)
+                    .map(|item| item.inner_html().trim().to_string())
+                    .collect();
+                teachers.insert(items[1].clone(), items[5].clone());
+            });
+
+        Ok(doc
+            .select(&tb_dn_seletor)
+            .next()
+            .context("Select Course Failed")?
+            .select(&tb_dg1_itemseletor)
+            .map(|e| {
+                let mut items: Vec<String> = e
+                    .select(&tb_td_with_fontseletor)
+                    .map(|item| item.inner_html())
+                    .collect();
+                if !items.is_empty() {
+                    items.remove(0);
+
+                    return items;
+                }
+
+                let mut items: Vec<String> = e
+                    .select(&tb_tdseletor)
+                    .map(|item| item.inner_html())
+                    .collect();
+                items.remove(0);
+                items
+            })
+            .map(|courses| {
+                courses
+                    .into_iter()
+                    .map(|course| {
+                        let teacher = teachers
+                            .get(
+                                course
+                                    .split(" ")
+                                    .collect::<Vec<&str>>()
+                                    .first()
+                                    .cloned()
+                                    .unwrap_or(""),
+                            )
+                            .cloned()
+                            .unwrap_or(String::new());
+
+                        RawCourse { course, teacher }
+                    })
+                    .collect()
+            })
+            .collect())
+    }
+
     impl<C: Client + Clone + Send> CalendarParser for JwcasApplication<C> {
         async fn get_classinfo_week_matrix(&self) -> Result<Vec<Vec<RawCourse>>> {
-            let text = self.get_classlist_html().await?;
-            let doc = Html::parse_document(&text);
-
-            // used to select teacher
-            let tb_up_rowseletor = Selector::parse(r#"table[id="GVxkall"]"#).unwrap();
-
-            // used to select course
-            let tb_dn_seletor: Selector = Selector::parse(r#"table[id="GVxkkb"]"#).unwrap();
-
-            let tb_dg1_itemseletor = Selector::parse(r#"tr[class="dg1-item"]"#).unwrap();
-            let tb_tdseletor = Selector::parse(r#"td"#).unwrap();
-            let tb_td_with_fontseletor = Selector::parse(r#"td > font"#).unwrap();
-            let mut teachers = HashMap::new();
-            doc.select(&tb_up_rowseletor)
-                .next()
-                .context("Select Teacher Failed")?
-                .select(&tb_dg1_itemseletor)
-                .for_each(|e| {
-                    let items: Vec<String> = e
-                        .select(&tb_td_with_fontseletor)
-                        .map(|item| item.inner_html().trim().to_string())
-                        .collect();
-                    if !items.is_empty() {
-                        teachers.insert(items[1].clone(), items[5].clone());
-
-                        return;
-                    }
-                    let items: Vec<String> = e
-                        .select(&tb_tdseletor)
-                        .map(|item| item.inner_html().trim().to_string())
-                        .collect();
-                    teachers.insert(items[1].clone(), items[5].clone());
-                });
-
-            Ok(doc
-                .select(&tb_dn_seletor)
-                .next()
-                .context("Select Course Failed")?
-                .select(&tb_dg1_itemseletor)
-                .map(|e| {
-                    let mut items: Vec<String> = e
-                        .select(&tb_td_with_fontseletor)
-                        .map(|item| item.inner_html())
-                        .collect();
-                    if !items.is_empty() {
-                        items.remove(0);
-
-                        return items;
-                    }
-
-                    let mut items: Vec<String> = e
-                        .select(&tb_tdseletor)
-                        .map(|item| item.inner_html())
-                        .collect();
-                    items.remove(0);
-                    items
-                })
-                .map(|courses| {
-                    courses
-                        .into_iter()
-                        .map(|course| {
-                            let teacher = teachers
-                                .get(
-                                    course
-                                        .split(" ")
-                                        .collect::<Vec<&str>>()
-                                        .first()
-                                        .cloned()
-                                        .unwrap_or(""),
-                                )
-                                .cloned()
-                                .unwrap_or(String::new());
-
-                            RawCourse { course, teacher }
-                        })
-                        .collect()
-                })
-                .collect())
+            select_text_to_courses(&self.get_classlist_html().await?)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::calendar::*;
+    use crate::base::app::AppVisitor;
+    use crate::extension::calendar::{ApplicationCalendarExt, Schedule};
+    use crate::impls::apps::wechat::jwqywx::JwqywxApplication;
+    use crate::impls::client::DefaultClient;
+    #[tokio::test]
+    async fn try_select_from_file() {
+        let text = std::fs::read_to_string("output.html-1").unwrap();
+        let courses = select_text_to_courses(&text).unwrap();
+        use crate::extension::calendar::parse_week_matrix;
+        let classlist = parse_week_matrix(courses).unwrap();
+        let client = DefaultClient::default();
+        let app = client.visit::<JwqywxApplication<_>>().await;
+        app.generate_icalendar_from_classlist(
+            classlist,
+            "20261007".to_owned(),
+            Schedule::default(),
+            None,
+        ).unwrap();
     }
 }

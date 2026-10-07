@@ -175,7 +175,15 @@ impl ParsedCourse {
         let firstdate = NaiveDate::parse_from_str(start_date, "%Y%m%d").unwrap();
         for week in self.week.iter() {
             let v: Vec<i32> = week.split("-").map(|v| v.parse::<i32>().unwrap()).collect();
-            let (mut start_week, end_week) = (v[0], v[1]);
+
+            let (mut start_week, end_week);
+            if v.len() == 1 {
+                start_week = v[0];
+                end_week = v[0];
+            } else {
+                start_week = v[0];
+                end_week = v[1];
+            }
 
             let mut startdate =
                 firstdate + Duration::days(((start_week - 1) * 7 + self.day as i32 - 1) as i64);
