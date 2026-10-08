@@ -305,6 +305,7 @@ mod tests {
             "20261007".to_owned(),
             Schedule::default(),
             None,
-        ).unwrap();
+        )
+        .unwrap();
     }
 }
