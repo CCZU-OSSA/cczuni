@@ -7,12 +7,12 @@ use crate::{
 };
 use aes::{
     Aes128Enc,
-    cipher::{BlockEncryptMut, KeyIvInit, block_padding::Pkcs7},
+    cipher::{Array, BlockModeEncrypt, KeyIvInit, block_padding::Pkcs7},
 };
 use anyhow::{Context, Result, bail};
 use base64::{Engine, prelude::BASE64_STANDARD};
 use cbc::Encryptor;
-use rand::Rng;
+use rand::RngExt;
 use reqwest::{StatusCode, cookie::Cookie};
 
 pub type CbcAES128Enc = Encryptor<Aes128Enc>;
@@ -33,17 +33,17 @@ impl<C: Client> WebVPNLogin for C {
                 CHARSET[idx] as u8
             })
             .collect::<Vec<u8>>();
-        let iv = token.clone();
+        let iv = Array::from_iter(token.clone());
         token.reverse();
-        let key = token.clone();
-        let encryptor = CbcAES128Enc::new(key.as_slice().into(), iv.as_slice().into());
+        let key = Array::from_iter(token.clone());
+        let encryptor = CbcAES128Enc::new(&key, &iv);
         let pwd_clone = account.password;
         let raw_pwd = pwd_clone.as_bytes();
         let pwd_len = raw_pwd.len();
         let mut buf = [0u8; 256];
         buf[..pwd_len].copy_from_slice(&raw_pwd);
         let encrypt_buf = encryptor
-            .encrypt_padded_mut::<Pkcs7>(&mut buf, pwd_len)
+            .encrypt_padded::<Pkcs7>(&mut buf, pwd_len)
             .map_err(|_| anyhow::anyhow!("Password encryption failed"))?;
         let encrypt_pwd = BASE64_STANDARD.encode(encrypt_buf);
         let mut data: HashMap<&'static str, String> = HashMap::new();

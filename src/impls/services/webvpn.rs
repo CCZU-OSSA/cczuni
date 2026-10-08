@@ -89,7 +89,7 @@ impl<C: Client> WebVPNService for C {
     ) -> Result<Message<Vec<ElinkServiceData>>> {
         let mut param = HashMap::new();
         param.insert("name", "");
-        let response = self
+        let data = self
             .reqwest_client()
             .get(format!(
                 "{}/enlink/api/client/service/sucmp/findServiceByUserId/{}",
@@ -101,9 +101,10 @@ impl<C: Client> WebVPNService for C {
             .header("Origin", ROOT_VPN)
             .query(&param)
             .send()
+            .await?
+            .json()
             .await?;
-        let json = response.text().await?;
-        Ok(serde_json::from_str(&json)?)
+        Ok(data)
     }
 
     async fn webvpn_get_visit_service_by_user(
