@@ -136,6 +136,7 @@ impl<C: Client> JwqywxApplication<C> {
             .client
             .reqwest_client()
             .get(format!("{}/api/xqall", WECHAT_APP_API))
+            .headers(self.headers.read().await.clone())
             .send()
             .await?
             .json()
