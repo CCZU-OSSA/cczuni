@@ -9,7 +9,7 @@ tokio = { version = "1", default-features = false, features = [
     "macros",
     "sync",
 ] }
-reqwest = { version = "0.12", default-features = false, features = [
+reqwest = { version = "0.13", default-features = false, features = [
     "cookies",
     "json",
 ] }
@@ -18,29 +18,29 @@ serde_json = { version = "1", default-features = false }
 async-recursion = "1"
 anyhow = "1"
 
-base64 = "0.22"
-scraper = { version = "0.25.0", default-features = false, features = [
+base64 = "0.23"
+scraper = { version = "0.27.0", default-features = false, features = [
     "atomic",
 ] }
-reqwest_cookie_store = "0.9.0"
+reqwest_cookie_store = "0.10.0"
 
 # webvpn-login
-aes = { version = "0.8", optional = true }
-cbc = { version = "0.1", optional = true }
-rand = { version = "0.9.2", optional = true }
+aes = { version = "0.9", optional = true }
+cbc = { version = "0.2", optional = true }
+rand = { version = "0.10.3", optional = true }
 
 # calendar
 uuid = { version = "1", features = ["v4", "v3"], optional = true }
 chrono = { version = "0.4", default-features = false, optional = true }
 icalendar = { version = "0.17.5", optional = true }
 # lru-client
-lru = { version = "0.16.2", optional = true }
+lru = { version = "0.18.5", optional = true }
 
 
 [features]
 vendored = ["reqwest/native-tls-vendored"]
 default-tls = ["reqwest/default-tls"]
-rustls-tls = ["reqwest/rustls-tls"]
+rustls-tls = ["reqwest/rustls"]
 full = ["webvpn-login", "calendar", "internals", "rustls-tls", "lru-client"]
 default = ["full"]
 webvpn-login = ["dep:aes", "dep:cbc", "dep:rand"]
